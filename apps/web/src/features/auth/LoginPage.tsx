@@ -5,7 +5,7 @@ import { ThemeToggle } from "../../components/ThemeToggle";
 import { isSupabaseConfigured } from "../../lib/supabase/client";
 import { applyTheme, getPreferredTheme, type ThemeMode } from "../../lib/utils/theme";
 import { useAuth } from "./useAuth";
-import logoDarkSrc from "../../../../../ClinGestor.png";
+import logoDarkSrc from "../../assets/clingestor-logo.svg";
 
 export function LoginPage() {
   const navigate = useNavigate();

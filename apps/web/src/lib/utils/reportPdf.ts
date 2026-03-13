@@ -2,7 +2,6 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
 import type { ReportSnapshot } from "../supabase/types";
-import logoSrc from "../../../../../ClinGestor.png";
 
 interface ReportPdfOptions {
   clinicName: string;
@@ -21,8 +20,6 @@ const COLORS = {
   white: [255, 255, 255] as const,
   ink: [19, 26, 72] as const,
 };
-
-let cachedLogoDataUrlPromise: Promise<string> | null = null;
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", {
@@ -48,49 +45,17 @@ function formatDate(value: string | null | undefined) {
   }).format(new Date(value));
 }
 
-function readBlobAsDataUrl(blob: Blob) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        resolve(reader.result);
-        return;
-      }
-
-      reject(new Error("Nao foi possivel ler o logo do ClinGestor."));
-    };
-    reader.onerror = () => reject(new Error("Nao foi possivel ler o logo do ClinGestor."));
-    reader.readAsDataURL(blob);
-  });
-}
-
-async function getLogoDataUrl() {
-  if (!cachedLogoDataUrlPromise) {
-    cachedLogoDataUrlPromise = fetch(logoSrc)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Nao foi possivel carregar o logo do ClinGestor.");
-        }
-
-        return response.blob();
-      })
-      .then(readBlobAsDataUrl);
-  }
-
-  return cachedLogoDataUrlPromise;
-}
-
-function addHeader(doc: jsPDF, title: string, options: ReportPdfOptions, logoDataUrl: string) {
+function addHeader(doc: jsPDF, title: string, options: ReportPdfOptions) {
   const pageWidth = doc.internal.pageSize.getWidth();
 
   doc.setFillColor(...COLORS.dark);
   doc.roundedRect(14, 12, pageWidth - 28, 42, 8, 8, "F");
 
-  doc.addImage(logoDataUrl, "PNG", 20, 19, 58, 18, undefined, "FAST");
-
   doc.setTextColor(...COLORS.white);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
+  doc.text("ClinGestor", 20, 28);
+
   doc.text(title, 20, 40);
 
   doc.setFont("helvetica", "normal");
@@ -155,9 +120,8 @@ function savePdf(doc: jsPDF, fileName: string) {
 
 export async function exportFinancialReportPdf(snapshot: ReportSnapshot, options: ReportPdfOptions) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const logoDataUrl = await getLogoDataUrl();
 
-  addHeader(doc, "Relatorio Financeiro", options, logoDataUrl);
+  addHeader(doc, "Relatorio Financeiro", options);
   addMetricCards(
     doc,
     [
@@ -245,9 +209,8 @@ export async function exportFinancialReportPdf(snapshot: ReportSnapshot, options
 
 export async function exportSessionsReportPdf(snapshot: ReportSnapshot, options: ReportPdfOptions) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const logoDataUrl = await getLogoDataUrl();
 
-  addHeader(doc, "Relatorio de Sessoes", options, logoDataUrl);
+  addHeader(doc, "Relatorio de Sessoes", options);
   addMetricCards(
     doc,
     [

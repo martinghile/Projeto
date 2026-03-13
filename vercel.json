@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build:web",
+  "outputDirectory": "apps/web/dist",
+  "rewrites": [
+    {
+      "source": "/whatsapp-proxy/:path*",
+      "destination": "http://34.69.45.21:4100/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
