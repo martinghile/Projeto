@@ -1,0 +1,7 @@
+<svg width="920" height="220" viewBox="0 0 920 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="10" y="10" width="150" height="200" rx="56" fill="#4C6162"/>
+  <path d="M122 64C114 48 98 38 74 38C44 38 24 58 24 109C24 160 45 182 78 182C107 182 126 167 126 138V131H82V102H160V138C160 186 126 214 76 214C24 214 -6 179 -6 109C-6 39 31 6 80 6C120 6 149 24 159 64H122Z" fill="#4C9AA1"/>
+  <text x="205" y="126" font-family="Trebuchet MS, Arial, sans-serif" font-size="102" font-weight="700" fill="#4C6162">Clin</text>
+  <text x="450" y="126" font-family="Trebuchet MS, Arial, sans-serif" font-size="102" font-weight="700" fill="#4C9AA1">Gestor</text>
+  <text x="510" y="182" font-family="Trebuchet MS, Arial, sans-serif" font-size="34" font-weight="400" fill="#304649">Sistema de Gestao Clinica</text>
+</svg>

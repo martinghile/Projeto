@@ -1,0 +1,60 @@
+{
+  "name": "@psi/desktop",
+  "private": true,
+  "version": "0.1.0",
+  "productName": "ClinGestor",
+  "description": "ClinGestor desktop para Windows",
+  "author": "ClinGestor",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "wait-on tcp:5173 && node electron/dev-launcher.cjs",
+    "build": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.clingestor.desktop",
+    "productName": "ClinGestor",
+    "electronVersion": "37.3.1",
+    "asar": true,
+    "npmRebuild": false,
+    "nodeGypRebuild": false,
+    "directories": {
+      "output": "../../Instalador"
+    },
+    "files": [
+      "electron/**/*",
+      "package.json",
+      {
+        "from": "../web/dist",
+        "to": "web/dist",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "icon": "../../favicon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "ClinGestor-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ClinGestor",
+      "uninstallDisplayName": "ClinGestor"
+    }
+  },
+  "devDependencies": {
+    "electron": "^37.3.1",
+    "electron-builder": "^26.0.12",
+    "wait-on": "^8.0.3"
+  }
+}
