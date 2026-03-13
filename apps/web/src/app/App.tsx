@@ -5,7 +5,7 @@ import { AuthProvider } from "../features/auth/useAuth";
 import { AppSettingsProvider } from "../features/settings/useAppSettings";
 import { applyTheme, getPreferredTheme } from "../lib/utils/theme";
 import { AppRouter } from "./router";
-import faviconSrc from "../../../../ClinPlanner.png";
+import faviconSrc from "../assets/ClinPlanner.png";
 
 export function App() {
   useEffect(() => {

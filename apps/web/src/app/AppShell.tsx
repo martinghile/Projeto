@@ -6,7 +6,7 @@ import { isSupabaseConfigured } from "../lib/supabase/client";
 import { applyTheme, getPreferredTheme, type ThemeMode } from "../lib/utils/theme";
 import { useAuth } from "../features/auth/useAuth";
 import { useAppSettings } from "../features/settings/useAppSettings";
-import logoSrc from "../../../../ClinPlanner.png";
+import logoSrc from "../assets/ClinPlanner.png";
 
 interface AppShellProps {
   children: ReactNode;

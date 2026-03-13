@@ -75,15 +75,13 @@ Para publicar a versao web na Vercel:
 
 1. Suba este repositorio para o GitHub.
 2. Importe o repositorio na Vercel.
-3. Mantenha a raiz do projeto no repositorio inteiro, porque o build usa `npm run build:web`.
+3. Em `Root Directory`, selecione `apps/web`.
 4. Configure as variaveis de ambiente do frontend na Vercel:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
    - `VITE_WHATSAPP_SERVICE_URL=/whatsapp-proxy`
 5. Faca o deploy.
 
-O arquivo [vercel.json](/Users/alessandro/dev/ClinGestor/vercel.json) ja configura:
-- build do monorepo
-- saida em `apps/web/dist`
+O arquivo [vercel.json](/Users/alessandro/dev/ClinGestor/apps/web/vercel.json) ja configura:
 - rewrite SPA para o React Router
 - proxy do WhatsApp em `/whatsapp-proxy/*` para `http://34.69.45.21:4100/*`
