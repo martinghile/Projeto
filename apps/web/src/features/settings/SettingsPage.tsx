@@ -402,6 +402,7 @@ export function SettingsPage() {
           </div>
 
           {feedback ? <p className="success-text">{feedback}</p> : null}
+          {loadError ? <p className="error-text">{loadError}</p> : null}
           {error ? <p className="error-text">{error}</p> : null}
 
           <div className="button-row">

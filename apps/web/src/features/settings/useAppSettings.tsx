@@ -44,6 +44,26 @@ export function AppSettingsProvider({ children }: { children: ReactNode }) {
       const result = await fetchAppSettings();
       setSettings(result);
     } catch (exception) {
+      setSettings((current) => {
+        if (current) {
+          return current;
+        }
+
+        const fullName =
+          (typeof user?.user_metadata?.full_name === "string" && user.user_metadata.full_name) ||
+          user?.email?.split("@")[0] ||
+          "ClinPlanner";
+        const clinicName =
+          (typeof user?.user_metadata?.clinic_name === "string" && user.user_metadata.clinic_name) || fullName;
+
+        return {
+          clinicName,
+          fullName,
+          email: user?.email ?? "",
+          timezone: "America/Sao_Paulo",
+          plan: "starter",
+        };
+      });
       setError(extractErrorMessage(exception));
     } finally {
       setLoading(false);
