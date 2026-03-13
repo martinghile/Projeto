@@ -1,13 +1,13 @@
-# ClinGestor em Nuvem
+# ClinPlanner em Nuvem
 
 ## Objetivo
 
-Deixar o `ClinGestor` acessivel em varias maquinas instaladas, sem depender de banco local nem de um servico de WhatsApp rodando em cada computador.
+Deixar o `ClinPlanner` acessivel em varias maquinas instaladas, sem depender de banco local nem de um servico de WhatsApp rodando em cada computador.
 
 ## Arquitetura recomendada
 
 ```text
-Maquinas com instalador do ClinGestor
+Maquinas com instalador do ClinPlanner
         |
         | HTTPS
         v
@@ -53,7 +53,7 @@ PORT=4100
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 WHATSAPP_ALLOWED_ORIGINS=https://app.seudominio.com
-WHATSAPP_AUTH_DIR=/var/lib/clingestor-whatsapp/.wwebjs_auth
+WHATSAPP_AUTH_DIR=/var/lib/clinplanner-whatsapp/.wwebjs_auth
 WHATSAPP_DEFAULT_COUNTRY_CODE=55
 WHATSAPP_REMINDER_CRON=* * * * *
 WHATSAPP_HEADLESS=true

@@ -54,7 +54,7 @@ function addHeader(doc: jsPDF, title: string, options: ReportPdfOptions) {
   doc.setTextColor(...COLORS.white);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
-  doc.text("ClinGestor", 20, 28);
+  doc.text("ClinPlanner", 20, 28);
 
   doc.text(title, 20, 40);
 
@@ -108,7 +108,7 @@ function addFooter(doc: jsPDF) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(...COLORS.slate);
-    doc.text("ClinGestor • Relatorio gerado automaticamente", 14, pageHeight - 7);
+    doc.text("ClinPlanner • Relatorio gerado automaticamente", 14, pageHeight - 7);
     doc.text(`Pagina ${page} de ${pageCount}`, pageWidth - 14, pageHeight - 7, { align: "right" });
   }
 }

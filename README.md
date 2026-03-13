@@ -1,4 +1,4 @@
-# Sistema de Gestao para Psicologos
+# ClinPlanner
 
 Base inicial de um SaaS para psicologos com:
 

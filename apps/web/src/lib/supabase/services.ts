@@ -123,7 +123,7 @@ const demoUser = {
 } as unknown as User;
 
 const defaultDemoSettings: AppSettings = {
-  clinicName: "ClinGestor Demo",
+  clinicName: "ClinPlanner Demo",
   fullName: "Modo demonstracao",
   email: "demo@psicogestao.local",
   timezone: "America/Sao_Paulo",
@@ -214,7 +214,7 @@ function buildFallbackSettingsFromUser(user: User | null): AppSettings {
   const fullName =
     (typeof user?.user_metadata?.full_name === "string" && user.user_metadata.full_name) ||
     user?.email?.split("@")[0] ||
-    "ClinGestor";
+    "ClinPlanner";
   const clinicName =
     (typeof user?.user_metadata?.clinic_name === "string" && user.user_metadata.clinic_name) || fullName;
 

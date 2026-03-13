@@ -6,7 +6,7 @@ import { isSupabaseConfigured } from "../lib/supabase/client";
 import { applyTheme, getPreferredTheme, type ThemeMode } from "../lib/utils/theme";
 import { useAuth } from "../features/auth/useAuth";
 import { useAppSettings } from "../features/settings/useAppSettings";
-import logoSrc from "../assets/clingestor-logo.svg";
+import logoSrc from "../../../../ClinPlanner.png";
 
 interface AppShellProps {
   children: ReactNode;
@@ -42,15 +42,15 @@ export function AppShell({ children }: AppShellProps) {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand-card brand-card--hero">
-          <img className="brand-logo" src={logoSrc} alt="ClinGestor" />
+          <img className="brand-logo" src={logoSrc} alt="ClinPlanner" />
           <div className="brand-card__copy">
-            <p className="eyebrow">ClinGestor</p>
+            <p className="eyebrow">ClinPlanner</p>
             <strong>{settings?.clinicName ?? "Consultorio"}</strong>
             <p className="muted">Gestao clinica simples, visual e pronta para o dia a dia.</p>
           </div>
 
           <div className="sidebar-user">
-            <span className="sidebar-user__avatar">{initials || "CG"}</span>
+            <span className="sidebar-user__avatar">{initials || "CP"}</span>
             <div>
               <strong>{displayName}</strong>
               <p className="muted small">{isDemo ? "Sessao demonstracao" : "Ambiente conectado"}</p>

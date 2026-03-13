@@ -1,6 +1,6 @@
 export type ThemeMode = "light" | "dark";
 
-export const THEME_STORAGE_KEY = "clingestor-theme";
+export const THEME_STORAGE_KEY = "clinplanner-theme";
 
 export function getPreferredTheme(): ThemeMode {
   if (typeof window === "undefined") {

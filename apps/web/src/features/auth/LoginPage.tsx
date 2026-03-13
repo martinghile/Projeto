@@ -5,7 +5,7 @@ import { ThemeToggle } from "../../components/ThemeToggle";
 import { isSupabaseConfigured } from "../../lib/supabase/client";
 import { applyTheme, getPreferredTheme, type ThemeMode } from "../../lib/utils/theme";
 import { useAuth } from "./useAuth";
-import logoDarkSrc from "../../assets/clingestor-logo.svg";
+import logoDarkSrc from "../../../../../ClinPlanner.png";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -50,9 +50,9 @@ export function LoginPage() {
         <div className="login-card__topbar">
           <ThemeToggle value={theme} onChange={setTheme} />
         </div>
-        <img className="brand-logo brand-logo--large" src={logoSrc} alt="ClinGestor" />
+        <img className="brand-logo brand-logo--large" src={logoSrc} alt="ClinPlanner" />
         <p className="eyebrow">Sistema de gestao clinica</p>
-        <h1>ClinGestor</h1>
+        <h1>ClinPlanner</h1>
         <p className="muted">
           O layout foi pensado para uso rapido no consultorio e para funcionar bem no desktop, no navegador e no celular.
         </p>

@@ -70,7 +70,7 @@ export function ReportsPage() {
 
     try {
       await exportFinancialReportPdf(snapshot, {
-        clinicName: settings?.clinicName ?? "ClinGestor",
+        clinicName: settings?.clinicName ?? "ClinPlanner",
         professionalName: settings?.fullName ?? "Profissional responsavel",
         reportLabel: snapshot.label,
       });
@@ -88,7 +88,7 @@ export function ReportsPage() {
 
     try {
       await exportSessionsReportPdf(snapshot, {
-        clinicName: settings?.clinicName ?? "ClinGestor",
+        clinicName: settings?.clinicName ?? "ClinPlanner",
         professionalName: settings?.fullName ?? "Profissional responsavel",
         reportLabel: snapshot.label,
       });

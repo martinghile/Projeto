@@ -5,7 +5,7 @@ import { AuthProvider } from "../features/auth/useAuth";
 import { AppSettingsProvider } from "../features/settings/useAppSettings";
 import { applyTheme, getPreferredTheme } from "../lib/utils/theme";
 import { AppRouter } from "./router";
-import faviconSrc from "../../../../favicon.ico";
+import faviconSrc from "../../../../ClinPlanner.png";
 
 export function App() {
   useEffect(() => {
@@ -17,7 +17,7 @@ export function App() {
       document.head.appendChild(favicon);
     }
 
-    favicon.type = "image/x-icon";
+    favicon.type = "image/png";
     favicon.href = faviconSrc;
     applyTheme(getPreferredTheme());
   }, []);

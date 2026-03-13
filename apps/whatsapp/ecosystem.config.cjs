@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: "clingestor-whatsapp",
+      name: "clinplanner-whatsapp",
       cwd: __dirname,
       script: "dist/index.js",
       instances: 1,
