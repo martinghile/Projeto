@@ -110,7 +110,7 @@ export function SettingsPage() {
 
     const timer = window.setInterval(() => {
       void loadWhatsAppStatus(true);
-    }, 5000);
+    }, 2000);
 
     return () => window.clearInterval(timer);
   }, [whatsAppAvailable, whatsAppConnection?.status]);

@@ -81,7 +81,7 @@ export function createServer(manager: WhatsAppConnectionManager) {
 
   app.post("/api/whatsapp/connect", async (request: Request, response: Response) => {
     const tenantRequest = request as TenantRequest;
-    const connection = await manager.connectTenant(tenantRequest.tenantContext.tenantId);
+    const connection = await manager.requestTenantConnection(tenantRequest.tenantContext.tenantId);
 
     response.json({ connection });
   });

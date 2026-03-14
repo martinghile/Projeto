@@ -77,6 +77,37 @@ function createEmptySnapshot(status: WhatsAppConnectionStatus = "disconnected"):
 export class WhatsAppConnectionManager {
   private readonly states = new Map<string, TenantClientState>();
 
+  private async initializeTenant(state: TenantClientState, attempt: number) {
+    try {
+      await state.client.initialize();
+    } catch (error) {
+      state.status = "error";
+      state.lastError = error instanceof Error ? error.message : "Falha ao inicializar o WhatsApp.";
+      await upsertConnectionSnapshot(state.tenantId, {
+        status: "error",
+        lastError: state.lastError,
+      });
+
+      if (attempt < 2 && isRetryableInitializationError(state.lastError)) {
+        console.warn(
+          `[whatsapp] tentativa ${attempt + 1} falhou ao restaurar ${state.tenantId}; tentando novamente: ${state.lastError}`,
+        );
+        await state.client.destroy().catch(() => undefined);
+        this.states.delete(state.tenantId);
+        await this.connectTenant(state.tenantId, { attempt: attempt + 1, waitForInitialization: true });
+        return;
+      }
+
+      throw error;
+    } finally {
+      const currentState = this.states.get(state.tenantId);
+
+      if (currentState === state) {
+        currentState.initializePromise = undefined;
+      }
+    }
+  }
+
   private async clearStaleBrowserSessionArtifacts(tenantId: string) {
     const sessionDir = path.join(config.authDir, `session-${tenantId}`);
     const singletonLockPath = path.join(sessionDir, "SingletonLock");
@@ -161,7 +192,15 @@ export class WhatsAppConnectionManager {
     return fetchConnectionSnapshot(tenantId);
   }
 
-  async connectTenant(tenantId: string, attempt = 0): Promise<WhatsAppConnectionSnapshot> {
+  async connectTenant(
+    tenantId: string,
+    options?: {
+      attempt?: number;
+      waitForInitialization?: boolean;
+    },
+  ): Promise<WhatsAppConnectionSnapshot> {
+    const attempt = options?.attempt ?? 0;
+    const waitForInitialization = options?.waitForInitialization ?? true;
     const existing = this.states.get(tenantId);
 
     if (existing) {
@@ -169,7 +208,7 @@ export class WhatsAppConnectionManager {
         await existing.client.destroy().catch(() => undefined);
         this.states.delete(tenantId);
       } else {
-        if (existing.initializePromise) {
+        if (waitForInitialization && existing.initializePromise) {
           await existing.initializePromise.catch(() => undefined);
         }
 
@@ -206,30 +245,31 @@ export class WhatsAppConnectionManager {
     this.bindEvents(state);
     await upsertConnectionSnapshot(tenantId, { status: "initializing", lastError: null });
 
-    state.initializePromise = client.initialize().catch(async (error) => {
-      state.status = "error";
-      state.lastError = error instanceof Error ? error.message : "Falha ao inicializar o WhatsApp.";
-      await upsertConnectionSnapshot(tenantId, {
-        status: "error",
-        lastError: state.lastError,
-      });
-      throw error;
-    });
+    state.initializePromise = this.initializeTenant(state, attempt);
 
-    await state.initializePromise.catch(() => undefined);
-    state.initializePromise = undefined;
-
-    if (state.status === "error" && attempt < 2 && isRetryableInitializationError(state.lastError)) {
-      console.warn(
-        `[whatsapp] tentativa ${attempt + 1} falhou ao restaurar ${tenantId}; tentando novamente: ${state.lastError}`,
-      );
-      await client.destroy().catch(() => undefined);
-      this.states.delete(tenantId);
-
-      return this.connectTenant(tenantId, attempt + 1);
+    if (waitForInitialization) {
+      await state.initializePromise.catch(() => undefined);
     }
 
     return this.getSnapshot(tenantId);
+  }
+
+  async requestTenantConnection(tenantId: string): Promise<WhatsAppConnectionSnapshot> {
+    const existing = this.states.get(tenantId);
+
+    if (existing && existing.status !== "error" && existing.status !== "disconnected") {
+      return this.getSnapshot(tenantId);
+    }
+
+    void this.connectTenant(tenantId, { waitForInitialization: false }).catch((error) => {
+      console.error(`[whatsapp] falha ao iniciar conexao do tenant ${tenantId}:`, error);
+    });
+
+    return {
+      ...(await this.getSnapshot(tenantId)),
+      status: existing?.status === "qr_pending" ? "qr_pending" : "initializing",
+      lastError: null,
+    };
   }
 
   async disconnectTenant(tenantId: string): Promise<WhatsAppConnectionSnapshot> {
