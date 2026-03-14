@@ -5,13 +5,15 @@ import { WhatsAppConnectionManager } from "./whatsapp/WhatsAppConnectionManager.
 
 async function bootstrap() {
   const manager = new WhatsAppConnectionManager();
-  await manager.bootstrap();
 
   const app = createServer(manager);
   const server = app.listen(config.port, () => {
     console.log(`[whatsapp] servico ouvindo na porta ${config.port}`);
   });
   const scheduler = startReminderScheduler(manager);
+  void manager.bootstrap().catch((error) => {
+    console.error("[whatsapp] falha ao restaurar tenants na inicializacao:", error);
+  });
 
   const shutdown = async () => {
     scheduler.stop();
