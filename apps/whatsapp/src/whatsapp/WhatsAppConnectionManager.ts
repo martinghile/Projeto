@@ -47,6 +47,21 @@ interface TenantClientState {
   initializePromise?: Promise<void>;
 }
 
+function isRetryableInitializationError(message: string | null | undefined) {
+  if (!message) {
+    return false;
+  }
+
+  const normalized = message.toLowerCase();
+
+  return (
+    normalized.includes("execution context was destroyed") ||
+    normalized.includes("target closed") ||
+    normalized.includes("browser has disconnected") ||
+    normalized.includes("protocol error")
+  );
+}
+
 function createEmptySnapshot(status: WhatsAppConnectionStatus = "disconnected"): WhatsAppConnectionSnapshot {
   return {
     status,
@@ -146,7 +161,7 @@ export class WhatsAppConnectionManager {
     return fetchConnectionSnapshot(tenantId);
   }
 
-  async connectTenant(tenantId: string): Promise<WhatsAppConnectionSnapshot> {
+  async connectTenant(tenantId: string, attempt = 0): Promise<WhatsAppConnectionSnapshot> {
     const existing = this.states.get(tenantId);
 
     if (existing) {
@@ -203,6 +218,16 @@ export class WhatsAppConnectionManager {
 
     await state.initializePromise.catch(() => undefined);
     state.initializePromise = undefined;
+
+    if (state.status === "error" && attempt < 2 && isRetryableInitializationError(state.lastError)) {
+      console.warn(
+        `[whatsapp] tentativa ${attempt + 1} falhou ao restaurar ${tenantId}; tentando novamente: ${state.lastError}`,
+      );
+      await client.destroy().catch(() => undefined);
+      this.states.delete(tenantId);
+
+      return this.connectTenant(tenantId, attempt + 1);
+    }
 
     return this.getSnapshot(tenantId);
   }
