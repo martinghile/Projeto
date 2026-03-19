@@ -158,7 +158,7 @@ export class WhatsAppConnectionManager {
     const tenantIds = await listReconnectableTenants();
 
     for (const tenantId of tenantIds) {
-      await this.connectTenant(tenantId).catch((error) => {
+      void this.connectTenant(tenantId, { waitForInitialization: false }).catch((error) => {
         console.error(`[whatsapp] falha ao restaurar tenant ${tenantId}:`, error);
       });
     }

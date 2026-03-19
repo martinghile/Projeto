@@ -128,8 +128,10 @@ export async function upsertConnectionSnapshot(
 export async function listReconnectableTenants() {
   const { data, error } = await supabaseAdmin
     .from("whatsapp_connections")
-    .select("tenant_id")
-    .neq("status", "disconnected");
+    .select("tenant_id, status, last_seen_at, updated_at")
+    .in("status", ["ready", "authenticated"])
+    .order("last_seen_at", { ascending: false, nullsFirst: false })
+    .order("updated_at", { ascending: false, nullsFirst: false });
 
   if (error) {
     throw error;
