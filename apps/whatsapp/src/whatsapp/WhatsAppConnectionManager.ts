@@ -226,7 +226,17 @@ export class WhatsAppConnectionManager {
       puppeteer: {
         headless: config.headless,
         executablePath: config.browserPath,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
+          "--disable-software-rasterizer",
+          "--no-zygote",
+          "--disable-accelerated-2d-canvas",
+          "--disable-background-networking",
+          "--disable-background-timer-throttling",
+        ],
       },
     });
     const state: TenantClientState = {
