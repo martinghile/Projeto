@@ -118,13 +118,23 @@ export function ReportsPage() {
         title="Relatorios"
         subtitle={`Resumo de ${snapshot.label}.`}
         action={
-          <div className="button-row">
-            <button className="secondary-button" type="button" onClick={() => setReferenceMonth((current) => addMonths(current, -1))}>
-              Mes anterior
+          <div className="button-row report-toolbar">
+            <button
+              className="secondary-button agenda-navigation__button"
+              type="button"
+              aria-label="Mes anterior"
+              onClick={() => setReferenceMonth((current) => addMonths(current, -1))}
+            >
+              &lt;&lt;
             </button>
-            <span className="agenda-period-label">{monthLabel(referenceMonth)}</span>
-            <button className="secondary-button" type="button" onClick={() => setReferenceMonth((current) => addMonths(current, 1))}>
-              Proximo mes
+            <span className="agenda-period-label report-toolbar__period">{monthLabel(referenceMonth)}</span>
+            <button
+              className="secondary-button agenda-navigation__button"
+              type="button"
+              aria-label="Proximo mes"
+              onClick={() => setReferenceMonth((current) => addMonths(current, 1))}
+            >
+              &gt;&gt;
             </button>
             <button
               className="secondary-button"
