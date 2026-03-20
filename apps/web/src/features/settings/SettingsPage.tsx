@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import { SectionCard } from "../../components/SectionCard";
 import type { WhatsAppConnectionSnapshot } from "../../lib/supabase/types";
-import { listReceipts } from "../../lib/supabase/services";
+import { listReceipts, updateCurrentUserPassword } from "../../lib/supabase/services";
 import {
   connectWhatsApp,
   disconnectWhatsApp,
@@ -44,6 +44,13 @@ export function SettingsPage() {
   const [activeShortcut, setActiveShortcut] = useState<SettingsShortcut | null>(null);
   const [shortcutFeedback, setShortcutFeedback] = useState("");
   const [shortcutLoading, setShortcutLoading] = useState<SettingsShortcut | null>(null);
+  const [passwordForm, setPasswordForm] = useState({
+    nextPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordFeedback, setPasswordFeedback] = useState("");
   const [whatsAppConnection, setWhatsAppConnection] = useState<WhatsAppConnectionSnapshot | null>(null);
   const [whatsAppLoading, setWhatsAppLoading] = useState(false);
   const [whatsAppBusy, setWhatsAppBusy] = useState<"connect" | "disconnect" | "refresh" | "">("");
@@ -129,6 +136,38 @@ export function SettingsPage() {
       setError(message);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPasswordError("");
+    setPasswordFeedback("");
+
+    if (passwordForm.nextPassword.length < 6) {
+      setPasswordError("Use pelo menos 6 caracteres na nova senha.");
+      return;
+    }
+
+    if (passwordForm.nextPassword !== passwordForm.confirmPassword) {
+      setPasswordError("A confirmacao da senha nao confere.");
+      return;
+    }
+
+    setPasswordSaving(true);
+
+    try {
+      await updateCurrentUserPassword(passwordForm.nextPassword);
+      setPasswordForm({
+        nextPassword: "",
+        confirmPassword: "",
+      });
+      setPasswordFeedback("Senha atualizada com sucesso.");
+    } catch (exception) {
+      const message = exception instanceof Error ? exception.message : "Nao foi possivel atualizar a senha.";
+      setPasswordError(message);
+    } finally {
+      setPasswordSaving(false);
     }
   }
 
@@ -461,6 +500,63 @@ export function SettingsPage() {
 
           {renderShortcutDetail()}
         </div>
+      </SectionCard>
+
+      <SectionCard title="Seguranca da conta" subtitle="Atualize a senha da conta usada para entrar no sistema.">
+        {isDemo ? (
+          <div className="info-strip">
+            <strong>Senha indisponivel no modo demonstracao.</strong>
+            <p className="muted">A demo usa dados locais e temporarios. Para trocar senha, entre com uma conta real.</p>
+          </div>
+        ) : (
+          <form className="form-grid" onSubmit={handlePasswordSubmit}>
+            <div className="field-grid">
+              <label>
+                Nova senha
+                <input
+                  className="text-input"
+                  type="password"
+                  minLength={6}
+                  required
+                  value={passwordForm.nextPassword}
+                  onChange={(event) =>
+                    setPasswordForm((current) => ({
+                      ...current,
+                      nextPassword: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label>
+                Confirmar nova senha
+                <input
+                  className="text-input"
+                  type="password"
+                  minLength={6}
+                  required
+                  value={passwordForm.confirmPassword}
+                  onChange={(event) =>
+                    setPasswordForm((current) => ({
+                      ...current,
+                      confirmPassword: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+            </div>
+
+            <p className="muted">A alteracao vale para o mesmo email usado no login e passa a funcionar imediatamente.</p>
+            {passwordFeedback ? <p className="success-text">{passwordFeedback}</p> : null}
+            {passwordError ? <p className="error-text">{passwordError}</p> : null}
+
+            <div className="button-row">
+              <button className="primary-button" type="submit" disabled={passwordSaving}>
+                {passwordSaving ? "Atualizando senha..." : "Salvar nova senha"}
+              </button>
+            </div>
+          </form>
+        )}
       </SectionCard>
 
       <SectionCard title="WhatsApp" subtitle="Conecte o numero da clinica via QR Code para liberar os lembretes automaticos.">

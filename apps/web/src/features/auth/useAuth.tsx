@@ -7,15 +7,25 @@ import {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 
-import { getInitialSession, signInWithPassword, signOut, subscribeToAuthChanges } from "../../lib/supabase/services";
-import { isSupabaseConfigured } from "../../lib/supabase/client";
+import {
+  endDemoSession,
+  getDemoSessionExpiresAt,
+  getInitialSession,
+  isDemoModeActive,
+  signInWithPassword,
+  signOut,
+  startDemoSession,
+  subscribeToAuthChanges,
+} from "../../lib/supabase/services";
 
 interface AuthContextValue {
   user: User | null;
   session: Session | null;
   loading: boolean;
   isDemo: boolean;
+  demoExpiresAt: string | null;
   signInUser: (email: string, password: string) => Promise<void>;
+  startDemoUser: () => Promise<void>;
   signOutUser: () => Promise<void>;
 }
 
@@ -25,6 +35,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDemo, setIsDemo] = useState(() => isDemoModeActive());
+  const [demoExpiresAt, setDemoExpiresAt] = useState<string | null>(() => getDemoSessionExpiresAt());
 
   useEffect(() => {
     let mounted = true;
@@ -37,6 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         setSession(currentSession);
         setUser(currentUser);
+        setIsDemo(isDemoModeActive());
+        setDemoExpiresAt(getDemoSessionExpiresAt());
         setLoading(false);
       })
       .catch(() => {
@@ -52,8 +66,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      if (isDemoModeActive()) {
+        return;
+      }
+
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
+      setIsDemo(false);
+      setDemoExpiresAt(null);
     });
 
     return () => {
@@ -62,21 +82,73 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isDemo || !demoExpiresAt) {
+      return;
+    }
+
+    const remaining = new Date(demoExpiresAt).getTime() - Date.now();
+
+    if (remaining <= 0) {
+      endDemoSession();
+      setUser(null);
+      setSession(null);
+      setIsDemo(false);
+      setDemoExpiresAt(null);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      endDemoSession();
+      setUser(null);
+      setSession(null);
+      setIsDemo(false);
+      setDemoExpiresAt(null);
+    }, remaining + 250);
+
+    return () => window.clearTimeout(timer);
+  }, [demoExpiresAt, isDemo]);
+
   async function handleSignIn(email: string, password: string) {
+    if (isDemoModeActive()) {
+      endDemoSession();
+      setIsDemo(false);
+      setDemoExpiresAt(null);
+    }
+
     const result = await signInWithPassword(email, password);
     const nextSession = "session" in result ? result.session ?? null : null;
     const nextUser = "user" in result ? result.user ?? null : null;
 
     setSession(nextSession);
     setUser(nextUser);
+    setIsDemo(false);
+    setDemoExpiresAt(null);
+  }
+
+  async function handleStartDemo() {
+    const result = startDemoSession();
+    setSession(result.session);
+    setUser(result.user);
+    setIsDemo(true);
+    setDemoExpiresAt(result.expiresAt);
   }
 
   async function handleSignOut() {
-    await signOut();
-    if (!isSupabaseConfigured) {
+    if (isDemoModeActive()) {
+      endDemoSession();
       setUser(null);
       setSession(null);
+      setIsDemo(false);
+      setDemoExpiresAt(null);
+      return;
     }
+
+    await signOut();
+    setUser(null);
+    setSession(null);
+    setIsDemo(false);
+    setDemoExpiresAt(null);
   }
 
   return (
@@ -85,8 +157,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         loading,
-        isDemo: !isSupabaseConfigured,
+        isDemo,
+        demoExpiresAt,
         signInUser: handleSignIn,
+        startDemoUser: handleStartDemo,
         signOutUser: handleSignOut,
       }}
     >

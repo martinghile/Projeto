@@ -2,7 +2,6 @@ import { type ReactNode, useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 
 import { ThemeToggle } from "../components/ThemeToggle";
-import { isSupabaseConfigured } from "../lib/supabase/client";
 import { applyTheme, getPreferredTheme, type ThemeMode } from "../lib/utils/theme";
 import { useAuth } from "../features/auth/useAuth";
 import { useAppSettings } from "../features/settings/useAppSettings";
@@ -22,7 +21,7 @@ const menuItems = [
 ];
 
 export function AppShell({ children }: AppShellProps) {
-  const { user, isDemo, signOutUser } = useAuth();
+  const { user, isDemo, demoExpiresAt, signOutUser } = useAuth();
   const { settings } = useAppSettings();
   const [theme, setTheme] = useState<ThemeMode>(() => getPreferredTheme());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -67,6 +66,9 @@ export function AppShell({ children }: AppShellProps) {
             <div>
               <strong>{displayName}</strong>
               <p className="muted small">{isDemo ? "Sessao demonstracao" : "Ambiente conectado"}</p>
+              {isDemo && demoExpiresAt ? (
+                <p className="muted small">Expira em {new Date(demoExpiresAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</p>
+              ) : null}
             </div>
           </div>
 
@@ -128,12 +130,12 @@ export function AppShell({ children }: AppShellProps) {
 
           <div className="header-actions">
             <div className="header-card header-card--status">
-              <span className={`pill ${isSupabaseConfigured ? "pill--success" : "pill--warning"}`}>
-                {isSupabaseConfigured ? "Supabase conectado" : "Modo demonstracao"}
+              <span className={`pill ${isDemo ? "pill--warning" : "pill--success"}`}>
+                {isDemo ? "Modo demonstracao" : "Supabase conectado"}
               </span>
               <p className="muted small">
                 {isDemo
-                  ? "A interface usa dados de exemplo ate voce configurar as variaveis do Supabase."
+                  ? "Voce esta em uma sessao local de apresentacao. Tudo que for criado aqui expira automaticamente."
                   : "Auth, banco e storage estao prontos para uso com o projeto do Supabase."}
               </p>
             </div>

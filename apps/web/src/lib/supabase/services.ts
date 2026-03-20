@@ -42,6 +42,8 @@ import { getErrorMessage } from "../utils/errors";
 
 const DEMO_STORAGE_KEY = "psicogestao-demo-store";
 const APP_SETTINGS_KEY = "psicogestao-app-settings";
+const DEMO_SESSION_KEY = "clinplanner-demo-session";
+const DEMO_SESSION_DURATION_MS = 15 * 60 * 1000;
 const SESSION_SELECT_COLUMNS =
   "id, patient_id, starts_at, ends_at, status, confirmation_status, session_price, billing_mode, billing_amount, location, series_id, patients(full_name)";
 const SESSION_SELECT_COLUMNS_LEGACY =
@@ -124,6 +126,10 @@ interface CurrentAppSettingsRpcRow {
   plan: string;
 }
 
+interface DemoSessionState {
+  expiresAt: string;
+}
+
 const demoUser = {
   id: "demo-user",
   aud: "authenticated",
@@ -145,6 +151,103 @@ const defaultDemoSettings: AppSettings = {
   timezone: "America/Sao_Paulo",
   plan: "starter",
 };
+
+function clearDemoWorkspace() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.removeItem(DEMO_STORAGE_KEY);
+  window.localStorage.removeItem(APP_SETTINGS_KEY);
+}
+
+function clearDemoSessionState() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.removeItem(DEMO_SESSION_KEY);
+  clearDemoWorkspace();
+}
+
+function readDemoSessionState(): DemoSessionState | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const rawValue = window.localStorage.getItem(DEMO_SESSION_KEY);
+
+  if (!rawValue) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(rawValue) as Partial<DemoSessionState>;
+
+    if (!parsed.expiresAt) {
+      clearDemoSessionState();
+      return null;
+    }
+
+    const expiresAt = new Date(parsed.expiresAt);
+
+    if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= Date.now()) {
+      clearDemoSessionState();
+      return null;
+    }
+
+    return {
+      expiresAt: expiresAt.toISOString(),
+    };
+  } catch {
+    clearDemoSessionState();
+    return null;
+  }
+}
+
+export function getDemoSessionExpiresAt() {
+  return readDemoSessionState()?.expiresAt ?? null;
+}
+
+export function isDemoModeActive() {
+  return !isSupabaseConfigured || Boolean(readDemoSessionState());
+}
+
+function shouldUseDemoMode() {
+  return isDemoModeActive();
+}
+
+export function startDemoSession() {
+  const initialStore = buildDemoSeed();
+  writeDemoStore(initialStore);
+  writeLocalAppSettings(defaultDemoSettings);
+
+  if (!isSupabaseConfigured || typeof window === "undefined") {
+    return {
+      session: { user: demoUser } as Session | null,
+      user: demoUser,
+      expiresAt: null,
+    };
+  }
+
+  const expiresAt = new Date(Date.now() + DEMO_SESSION_DURATION_MS).toISOString();
+  window.localStorage.setItem(DEMO_SESSION_KEY, JSON.stringify({ expiresAt }));
+
+  return {
+    session: { user: demoUser } as Session | null,
+    user: demoUser,
+    expiresAt,
+  };
+}
+
+export function endDemoSession() {
+  if (!isSupabaseConfigured) {
+    clearDemoWorkspace();
+    return;
+  }
+
+  clearDemoSessionState();
+}
 
 function ensureClient() {
   if (!supabase) {
@@ -1151,7 +1254,7 @@ async function getCurrentMembership() {
 }
 
 export async function getInitialSession() {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     return { session: { user: demoUser } as Session | null, user: demoUser };
   }
 
@@ -1204,7 +1307,8 @@ export async function signInWithPassword(email: string, password: string) {
 }
 
 export async function signOut() {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
+    endDemoSession();
     return;
   }
 
@@ -1216,8 +1320,25 @@ export async function signOut() {
   }
 }
 
+export async function updateCurrentUserPassword(password: string) {
+  if (shouldUseDemoMode()) {
+    throw new Error("Alteracao de senha indisponivel no modo demonstracao.");
+  }
+
+  const client = ensureClient();
+  const { data, error } = await client.auth.updateUser({
+    password,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data.user;
+}
+
 export async function fetchDashboardSummary(): Promise<DashboardSummary> {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     return buildDashboardSummaryFromStore(readDemoStore());
   }
 
@@ -1289,7 +1410,7 @@ export async function fetchDashboardSummary(): Promise<DashboardSummary> {
 }
 
 export async function fetchSessionsInRange(rangeStart: string, rangeEnd: string): Promise<SessionItem[]> {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     const store = readDemoStore();
     return sortSessionsAscending(
       store.sessions.filter((session) => session.startsAt >= rangeStart && session.startsAt <= rangeEnd),
@@ -1318,7 +1439,7 @@ export async function fetchWeeklySessions(): Promise<SessionItem[]> {
 }
 
 export async function fetchPatients(): Promise<PatientItem[]> {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     return sortPatientsByName(readDemoStore().patients);
   }
 
@@ -1338,7 +1459,7 @@ export async function fetchPatients(): Promise<PatientItem[]> {
 }
 
 export async function createPatient(input: CreatePatientInput): Promise<PatientItem> {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     const store = readDemoStore();
     const patient: PatientItem = {
       id: crypto.randomUUID(),
@@ -1466,7 +1587,7 @@ export async function createPatient(input: CreatePatientInput): Promise<PatientI
 }
 
 export async function updatePatient(patientId: string, input: UpdatePatientInput): Promise<PatientItem> {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     const store = readDemoStore();
     const existingPatient = store.patients.find((item) => item.id === patientId);
 
@@ -1582,7 +1703,7 @@ export async function generateAnamnesisLink(patientId: string) {
   const shareToken = crypto.randomUUID();
   const shareExpiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString();
 
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     const store = readDemoStore();
     const existingDetail = store.patientDetails[patientId];
 
@@ -1664,7 +1785,7 @@ export async function generateAnamnesisLink(patientId: string) {
 }
 
 export async function fetchPublicAnamnesisByToken(shareToken: string): Promise<PublicAnamnesisItem | null> {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     const store = readDemoStore();
     const detail = findDemoPatientByShareToken(store, shareToken);
 
@@ -1708,7 +1829,7 @@ export async function fetchPublicAnamnesisByToken(shareToken: string): Promise<P
 export async function submitPublicAnamnesis(shareToken: string, answers: Record<string, string>) {
   const submittedAt = new Date().toISOString();
 
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     const store = readDemoStore();
     const detail = findDemoPatientByShareToken(store, shareToken);
 
@@ -1747,7 +1868,7 @@ export async function submitPublicAnamnesis(shareToken: string, answers: Record<
 }
 
 export async function fetchPatientDetail(patientId: string): Promise<PatientDetail | null> {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     return buildPatientDetailFromStore(readDemoStore(), patientId);
   }
 
@@ -1858,7 +1979,7 @@ export async function fetchPatientDetail(patientId: string): Promise<PatientDeta
 export async function createMedicalRecord(input: CreateMedicalRecordInput): Promise<MedicalRecordItem> {
   const createdAt = new Date().toISOString();
 
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     const store = readDemoStore();
     const detail = store.patientDetails[input.patientId];
 
@@ -1917,7 +2038,7 @@ export async function createMedicalRecord(input: CreateMedicalRecordInput): Prom
 }
 
 export async function createSessionSeries(input: CreateSessionSeriesInput): Promise<SessionSeriesItem> {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     const store = readDemoStore();
     const series: SessionSeriesItem = {
       id: crypto.randomUUID(),
@@ -2001,7 +2122,7 @@ export async function createSessionSeries(input: CreateSessionSeriesInput): Prom
 }
 
 export async function syncRecurringSessions(horizonEnd: string): Promise<void> {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     const syncedStore = ensureRecurringSessionsInStore(readDemoStore(), horizonEnd);
     writeDemoStore(syncedStore);
     return;
@@ -2195,7 +2316,7 @@ export async function findSessionConflicts(
 
   await syncRecurringSessions(rangeEnd);
 
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     const store = ensureRecurringSessionsInStore(readDemoStore(), rangeEnd);
     return findConflictsInSessionList(store.sessions, occurrences, excludeSessionId);
   }
@@ -2225,7 +2346,7 @@ export async function findSessionConflicts(
 }
 
 export async function deactivatePatient(patientId: string, fromDate = new Date().toISOString()): Promise<void> {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     const store = readDemoStore();
 
     writeDemoStore({
@@ -2269,7 +2390,7 @@ export async function deactivatePatient(patientId: string, fromDate = new Date()
 }
 
 export async function createSession(input: CreateSessionInput): Promise<SessionItem> {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     const store = readDemoStore();
     const patient = store.patients.find((item) => item.id === input.patientId);
 
@@ -2398,7 +2519,7 @@ export async function createSession(input: CreateSessionInput): Promise<SessionI
 }
 
 export async function updateSession(sessionId: string, input: UpdateSessionInput): Promise<SessionItem> {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     const store = readDemoStore();
     const patient = store.patients.find((item) => item.id === input.patientId);
 
@@ -2519,7 +2640,7 @@ export async function updateSession(sessionId: string, input: UpdateSessionInput
 }
 
 export async function updateSessionStatus(sessionId: string, status: SessionStatus): Promise<void> {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     const store = readDemoStore();
     const nextSessions = store.sessions.map((session) => (session.id === sessionId ? { ...session, status } : session));
     const updatedSession = nextSessions.find((session) => session.id === sessionId);
@@ -2566,7 +2687,7 @@ export async function updateSessionStatus(sessionId: string, status: SessionStat
 }
 
 export async function fetchFinancialOverview(): Promise<FinancialOverview> {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     return buildFinancialOverviewFromStore(readDemoStore());
   }
 
@@ -2600,7 +2721,7 @@ export async function fetchFinancialOverview(): Promise<FinancialOverview> {
 }
 
 export async function createPayment(input: CreatePaymentInput): Promise<PaymentItem> {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     const store = readDemoStore();
     const patient = store.patients.find((item) => item.id === input.patientId);
 
@@ -2654,7 +2775,7 @@ export async function createPayment(input: CreatePaymentInput): Promise<PaymentI
 export async function markPaymentAsPaid(paymentId: string): Promise<void> {
   const paidAt = new Date().toISOString();
 
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     const store = readDemoStore();
     writeDemoStore({
       ...store,
@@ -2676,7 +2797,7 @@ export async function markPaymentAsPaid(paymentId: string): Promise<void> {
 }
 
 export async function attachReceiptToPayment(paymentId: string, patientId: string, file: File) {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     const store = readDemoStore();
     writeDemoStore({
       ...store,
@@ -2702,7 +2823,7 @@ export async function attachReceiptToPayment(paymentId: string, patientId: strin
 }
 
 export async function fetchReportMetrics(): Promise<ReportMetrics> {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     return buildReportMetricsFromStore(readDemoStore());
   }
 
@@ -2740,7 +2861,7 @@ export async function fetchReportMetrics(): Promise<ReportMetrics> {
 }
 
 export async function fetchReportSnapshot(periodStart: string, periodEnd: string): Promise<ReportSnapshot> {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     const store = readDemoStore();
     const timelineStart = addMonthsDate(startOfMonthDate(periodStart), -5).toISOString();
     const sessions = store.sessions.filter((session) => session.startsAt >= periodStart && session.startsAt <= periodEnd);
@@ -2829,7 +2950,7 @@ export async function fetchReportSnapshot(periodStart: string, periodEnd: string
 }
 
 export async function fetchAppSettings(): Promise<AppSettings> {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     return readLocalAppSettings();
   }
 
@@ -2859,7 +2980,7 @@ export async function fetchAppSettings(): Promise<AppSettings> {
 export async function updateAppSettings(
   input: Pick<AppSettings, "clinicName" | "fullName" | "timezone" | "plan">,
 ): Promise<AppSettings> {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     const current = readLocalAppSettings();
     const next = {
       ...current,
@@ -2914,7 +3035,7 @@ export async function uploadReceipt(file: File, tenantId: string, patientId: str
 }
 
 export async function listReceipts() {
-  if (!isSupabaseConfigured) {
+  if (shouldUseDemoMode()) {
     return readDemoStore().payments.filter((payment) => payment.receiptPath);
   }
 

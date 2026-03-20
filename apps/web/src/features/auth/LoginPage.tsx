@@ -9,7 +9,7 @@ import logoDarkSrc from "../../assets/ClinPlanner.png";
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { user, signInUser, isDemo } = useAuth();
+  const { user, signInUser, startDemoUser, isDemo } = useAuth();
   const [email, setEmail] = useState("psicologa@consultorio.com");
   const [password, setPassword] = useState("123456");
   const [errorMessage, setErrorMessage] = useState("");
@@ -38,6 +38,21 @@ export function LoginPage() {
       navigate("/", { replace: true });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Nao foi possivel entrar.";
+      setErrorMessage(message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDemoAccess() {
+    setErrorMessage("");
+    setSubmitting(true);
+
+    try {
+      await startDemoUser();
+      navigate("/", { replace: true });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Nao foi possivel iniciar o modo demonstracao.";
       setErrorMessage(message);
     } finally {
       setSubmitting(false);
@@ -83,13 +98,19 @@ export function LoginPage() {
           <button className="primary-button" type="submit" disabled={submitting}>
             {submitting ? "Entrando..." : isDemo ? "Entrar em demonstracao" : "Entrar"}
           </button>
+
+          {isSupabaseConfigured ? (
+            <button className="secondary-button" type="button" disabled={submitting} onClick={() => void handleDemoAccess()}>
+              {submitting ? "Preparando demo..." : "Entrar em demo por 15 minutos"}
+            </button>
+          ) : null}
         </form>
 
         <div className="info-strip">
           <strong>{isSupabaseConfigured ? "Conexao pronta" : "Passo seguinte"}</strong>
           <p className="muted">
             {isSupabaseConfigured
-              ? "As credenciais do Supabase foram informadas. A tela ja usa Auth real."
+              ? "Voce pode entrar com sua conta real ou abrir uma demonstracao temporaria com dados locais que expiram sozinhos."
               : "Crie apps/web/.env.local com VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY para sair do modo demo."}
           </p>
         </div>
