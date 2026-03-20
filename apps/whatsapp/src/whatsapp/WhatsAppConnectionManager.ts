@@ -77,6 +77,11 @@ function createEmptySnapshot(status: WhatsAppConnectionStatus = "disconnected"):
 export class WhatsAppConnectionManager {
   private readonly states = new Map<string, TenantClientState>();
 
+  private async waitBeforeRetry(attempt: number) {
+    const retryDelayMs = 1200 * (attempt + 1);
+    await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+  }
+
   private async initializeTenant(state: TenantClientState, attempt: number) {
     try {
       await state.client.initialize();
@@ -88,12 +93,13 @@ export class WhatsAppConnectionManager {
         lastError: state.lastError,
       });
 
-      if (attempt < 2 && isRetryableInitializationError(state.lastError)) {
+      if (attempt < 3 && isRetryableInitializationError(state.lastError)) {
         console.warn(
           `[whatsapp] tentativa ${attempt + 1} falhou ao restaurar ${state.tenantId}; tentando novamente: ${state.lastError}`,
         );
         await state.client.destroy().catch(() => undefined);
         this.states.delete(state.tenantId);
+        await this.waitBeforeRetry(attempt);
         await this.connectTenant(state.tenantId, { attempt: attempt + 1, waitForInitialization: true });
         return;
       }

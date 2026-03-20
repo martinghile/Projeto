@@ -583,14 +583,14 @@ export function AgendaPage() {
         <div className="agenda-topbar">
           <div className="agenda-view-tabs">
             <button
-              className={`tab-button ${view === "week" ? "tab-button--active" : ""}`}
+              className={`tab-button agenda-view-tab ${view === "week" ? "tab-button--active" : ""}`}
               type="button"
               onClick={() => setView("week")}
             >
               Semanal
             </button>
             <button
-              className={`tab-button ${view === "month" ? "tab-button--active" : ""}`}
+              className={`tab-button agenda-view-tab ${view === "month" ? "tab-button--active" : ""}`}
               type="button"
               onClick={() => setView("month")}
             >
@@ -599,14 +599,26 @@ export function AgendaPage() {
           </div>
 
           <div className="agenda-navigation">
-            <button className="secondary-button" type="button" disabled={!previousAllowed} onClick={() => movePeriod(-1)}>
-              Anterior
+            <button
+              className="secondary-button agenda-navigation__button"
+              type="button"
+              disabled={!previousAllowed}
+              aria-label="Periodo anterior"
+              onClick={() => movePeriod(-1)}
+            >
+              &lt;&lt;
             </button>
-            <span className="agenda-period-label">
+            <span className="agenda-period-label agenda-navigation__period">
               {view === "week" ? formatWeekRangeLabel(referenceDate) : formatMonthLabel(referenceDate)}
             </span>
-            <button className="secondary-button" type="button" disabled={!nextAllowed} onClick={() => movePeriod(1)}>
-              Proxima
+            <button
+              className="secondary-button agenda-navigation__button"
+              type="button"
+              disabled={!nextAllowed}
+              aria-label="Proximo periodo"
+              onClick={() => movePeriod(1)}
+            >
+              &gt;&gt;
             </button>
           </div>
         </div>
