@@ -280,6 +280,7 @@ export async function applyIncomingIntent(sessionId: string, intent: Exclude<Inc
   if (intent === "confirm") {
     patch.confirmation_status = "confirmed";
     patch.confirmed_at = nowIso;
+    patch.status = "confirmed";
   }
 
   if (intent === "reschedule") {

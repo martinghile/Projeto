@@ -1,4 +1,4 @@
-export type SessionStatus = "confirmed" | "cancelled" | "missed" | "completed";
+export type SessionStatus = "scheduled" | "confirmed" | "cancelled" | "missed" | "completed";
 export type PaymentStatus = "pending" | "paid" | "overdue" | "cancelled";
 export type AnamnesisStatus = "draft" | "sent" | "completed";
 export type SessionScheduleMode = "single" | "weekly";

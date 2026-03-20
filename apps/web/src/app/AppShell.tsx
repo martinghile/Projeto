@@ -25,10 +25,23 @@ export function AppShell({ children }: AppShellProps) {
   const { user, isDemo, signOutUser } = useAuth();
   const { settings } = useAppSettings();
   const [theme, setTheme] = useState<ThemeMode>(() => getPreferredTheme());
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
+
+  useEffect(() => {
+    function handleResize() {
+      if (window.innerWidth > 720) {
+        setIsMobileMenuOpen(false);
+      }
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const displayName = settings?.fullName ?? user?.user_metadata?.full_name ?? user?.email ?? "Psicologa";
   const initials = displayName
@@ -56,14 +69,27 @@ export function AppShell({ children }: AppShellProps) {
               <p className="muted small">{isDemo ? "Sessao demonstracao" : "Ambiente conectado"}</p>
             </div>
           </div>
+
+          <button
+            className={`mobile-menu-toggle ${isMobileMenuOpen ? "mobile-menu-toggle--active" : ""}`}
+            type="button"
+            aria-label="Abrir menu principal"
+            aria-expanded={isMobileMenuOpen}
+            onClick={() => setIsMobileMenuOpen((value) => !value)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
         </div>
 
-        <nav className="menu-grid" aria-label="Menu principal">
+        <nav className={`menu-grid ${isMobileMenuOpen ? "menu-grid--open" : ""}`} aria-label="Menu principal">
           {menuItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               className={({ isActive }) => `menu-link ${isActive ? "menu-link--active" : ""}`}
+              onClick={() => setIsMobileMenuOpen(false)}
             >
               <span className="menu-link__icon">{item.short}</span>
               <span>{item.label}</span>
@@ -74,7 +100,14 @@ export function AppShell({ children }: AppShellProps) {
         <div className="sidebar-footer">
           <ThemeToggle value={theme} onChange={setTheme} />
 
-          <button className="secondary-button secondary-button--wide" type="button" onClick={() => signOutUser()}>
+          <button
+            className="secondary-button secondary-button--wide"
+            type="button"
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              signOutUser();
+            }}
+          >
             {isDemo ? "Sair do modo demo" : "Sair"}
           </button>
         </div>

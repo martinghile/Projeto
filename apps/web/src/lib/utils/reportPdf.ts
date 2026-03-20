@@ -2,6 +2,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
 import type { ReportSnapshot } from "../supabase/types";
+import { statusLabel } from "./format";
 
 interface ReportPdfOptions {
   clinicName: string;
@@ -217,8 +218,8 @@ export async function exportSessionsReportPdf(snapshot: ReportSnapshot, options:
       { label: "Sessoes do periodo", value: String(snapshot.sessions.length) },
       { label: "Realizadas", value: String(snapshot.completedSessions) },
       {
-        label: "Confirmadas",
-        value: String(snapshot.sessionSummary.find((item) => item.status === "confirmed")?.count ?? 0),
+        label: "Agendadas",
+        value: String(snapshot.sessionSummary.find((item) => item.status === "scheduled")?.count ?? 0),
       },
       { label: "Faltas", value: String(snapshot.missedSessions) },
     ],
@@ -307,7 +308,7 @@ export async function exportSessionsReportPdf(snapshot: ReportSnapshot, options:
     body: snapshot.sessions.map((session) => [
       session.patientName,
       formatDateTime(session.startsAt),
-      session.status,
+      statusLabel(session.status),
       formatCurrency(session.sessionPrice),
       session.location ?? "Sem local",
     ]),

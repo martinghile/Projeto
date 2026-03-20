@@ -94,6 +94,22 @@ function isMissingBillingSchemaError(error: { message?: string } | null | undefi
   );
 }
 
+function isMissingScheduledStatusError(error: { message?: string } | null | undefined) {
+  const message = error?.message ?? "";
+  return message.includes("invalid input value for enum") && message.includes("scheduled");
+}
+
+function withLegacyConfirmedStatus<T extends Record<string, unknown>>(payload: T): T {
+  if (payload.status !== "scheduled") {
+    return payload;
+  }
+
+  return {
+    ...payload,
+    status: "confirmed",
+  };
+}
+
 function ensureMonthlyBillingSchemaAvailable() {
   throw new Error(
     "Para usar cobranca mensal na agenda, rode a migration 0012_session_billing_mode.sql no SQL Editor do Supabase e atualize a pagina.",
@@ -323,14 +339,23 @@ function sortRecordsDescending(records: MedicalRecordItem[]) {
 }
 
 function mapSession(row: any): SessionItem {
+  const confirmationStatus = (row.confirmation_status ?? "pending") as SessionConfirmationStatus;
+  const rawStatus = row.status as SessionStatus;
+  const status =
+    rawStatus === "completed" || rawStatus === "cancelled" || rawStatus === "missed"
+      ? rawStatus
+      : confirmationStatus === "confirmed"
+        ? "confirmed"
+        : "scheduled";
+
   return {
     id: row.id,
     patientId: row.patient_id,
     patientName: row.patients?.full_name ?? "Paciente",
     startsAt: row.starts_at,
     endsAt: row.ends_at,
-    status: row.status,
-    confirmationStatus: (row.confirmation_status ?? "pending") as SessionConfirmationStatus,
+    status,
+    confirmationStatus,
     sessionPrice: Number(row.session_price ?? 0),
     billingMode: (row.billing_mode ?? "per_session") as SessionBillingMode,
     billingAmount: Number(row.billing_amount ?? row.session_price ?? 0),
@@ -807,6 +832,8 @@ function buildTopPatients(sessions: SessionItem[]): ReportPatientSummary[] {
 
 function sessionStatusLabel(status: SessionStatus) {
   switch (status) {
+    case "scheduled":
+      return "Agendadas";
     case "completed":
       return "Realizadas";
     case "confirmed":
@@ -821,7 +848,7 @@ function sessionStatusLabel(status: SessionStatus) {
 }
 
 function buildSessionSummary(sessions: SessionItem[]): ReportSessionSummary[] {
-  const order: SessionStatus[] = ["completed", "confirmed", "missed", "cancelled"];
+  const order: SessionStatus[] = ["scheduled", "confirmed", "completed", "missed", "cancelled"];
 
   return order.map((status) => ({
     status,
@@ -1027,7 +1054,7 @@ function ensureRecurringSessionsInStore(store: DemoStore, horizonEnd: string) {
         patientName: patient.fullName,
         startsAt: occurrence.startsAt,
         endsAt: occurrence.endsAt,
-        status: "confirmed",
+        status: "scheduled",
         confirmationStatus: "pending",
         sessionPrice: series.sessionPrice,
         billingMode: series.billingMode,
@@ -2082,7 +2109,7 @@ export async function syncRecurringSessions(horizonEnd: string): Promise<void> {
         session_price: series.sessionPrice,
         billing_mode: series.billingMode,
         billing_amount: series.billingAmount,
-        status: "confirmed",
+        status: "scheduled",
         location: emptyToNull(series.location ?? undefined),
         series_id: series.id,
       });
@@ -2093,7 +2120,7 @@ export async function syncRecurringSessions(horizonEnd: string): Promise<void> {
         patientName: patient.fullName,
         startsAt: occurrence.startsAt,
         endsAt: occurrence.endsAt,
-        status: "confirmed",
+        status: "scheduled",
         confirmationStatus: "pending",
         sessionPrice: series.sessionPrice,
         billingMode: series.billingMode,
@@ -2113,6 +2140,13 @@ export async function syncRecurringSessions(horizonEnd: string): Promise<void> {
     .insert(rowsToInsert)
     .select(SESSION_SELECT_COLUMNS);
 
+  if (isMissingScheduledStatusError(error)) {
+    ({ data, error } = await client
+      .from("sessions")
+      .insert(rowsToInsert.map((row) => withLegacyConfirmedStatus(row)))
+      .select(SESSION_SELECT_COLUMNS));
+  }
+
   if (isMissingBillingSchemaError(error)) {
     const hasMonthlySeries = rowsToInsert.some((row) => row.billing_mode === "monthly");
 
@@ -2124,6 +2158,18 @@ export async function syncRecurringSessions(horizonEnd: string): Promise<void> {
       .from("sessions")
       .insert(rowsToInsert.map(({ billing_mode: _billingMode, billing_amount: _billingAmount, ...row }) => row))
       .select(SESSION_SELECT_COLUMNS_LEGACY));
+
+    if (isMissingScheduledStatusError(error)) {
+      ({ data, error } = await client
+        .from("sessions")
+        .insert(
+          rowsToInsert
+            .map(({ billing_mode: _billingMode, billing_amount: _billingAmount, ...row }) =>
+              withLegacyConfirmedStatus(row),
+            ),
+        )
+        .select(SESSION_SELECT_COLUMNS_LEGACY));
+    }
   }
 
   if (error) {
@@ -2158,16 +2204,16 @@ export async function findSessionConflicts(
   let { data, error }: any = await client
     .from("sessions")
     .select(SESSION_SELECT_COLUMNS)
-    .gte("starts_at", rangeStart)
-    .lte("starts_at", rangeEnd)
+    .lt("starts_at", rangeEnd)
+    .gt("ends_at", rangeStart)
     .order("starts_at", { ascending: true });
 
   if (isMissingBillingSchemaError(error)) {
     ({ data, error } = await client
       .from("sessions")
       .select(SESSION_SELECT_COLUMNS_LEGACY)
-      .gte("starts_at", rangeStart)
-      .lte("starts_at", rangeEnd)
+      .lt("starts_at", rangeEnd)
+      .gt("ends_at", rangeStart)
       .order("starts_at", { ascending: true }));
   }
 
@@ -2237,7 +2283,7 @@ export async function createSession(input: CreateSessionInput): Promise<SessionI
       patientName: patient.fullName,
       startsAt: input.startsAt,
       endsAt: input.endsAt,
-      status: input.status ?? "confirmed",
+      status: input.status ?? "scheduled",
       confirmationStatus: "pending",
       sessionPrice: input.sessionPrice,
       billingMode: input.billingMode ?? "per_session",
@@ -2271,12 +2317,34 @@ export async function createSession(input: CreateSessionInput): Promise<SessionI
       session_price: input.sessionPrice,
       billing_mode: input.billingMode ?? "per_session",
       billing_amount: input.billingAmount ?? input.sessionPrice,
-      status: input.status ?? "confirmed",
+      status: input.status ?? "scheduled",
       location: emptyToNull(input.location),
       series_id: input.seriesId ?? null,
     })
     .select(SESSION_SELECT_COLUMNS)
     .single();
+
+  if (isMissingScheduledStatusError(error)) {
+    ({ data, error } = await client
+      .from("sessions")
+      .insert(
+        withLegacyConfirmedStatus({
+          tenant_id: membership.tenantId,
+          patient_id: input.patientId,
+          psychologist_id: membership.userId,
+          starts_at: input.startsAt,
+          ends_at: input.endsAt,
+          session_price: input.sessionPrice,
+          billing_mode: input.billingMode ?? "per_session",
+          billing_amount: input.billingAmount ?? input.sessionPrice,
+          status: input.status ?? "scheduled",
+          location: emptyToNull(input.location),
+          series_id: input.seriesId ?? null,
+        }),
+      )
+      .select(SESSION_SELECT_COLUMNS)
+      .single());
+  }
 
   if (isMissingBillingSchemaError(error)) {
     if ((input.billingMode ?? "per_session") === "monthly") {
@@ -2292,12 +2360,32 @@ export async function createSession(input: CreateSessionInput): Promise<SessionI
         starts_at: input.startsAt,
         ends_at: input.endsAt,
         session_price: input.sessionPrice,
-        status: input.status ?? "confirmed",
+        status: input.status ?? "scheduled",
         location: emptyToNull(input.location),
         series_id: input.seriesId ?? null,
       })
       .select(SESSION_SELECT_COLUMNS_LEGACY)
       .single());
+
+    if (isMissingScheduledStatusError(error)) {
+      ({ data, error } = await client
+        .from("sessions")
+        .insert(
+          withLegacyConfirmedStatus({
+            tenant_id: membership.tenantId,
+            patient_id: input.patientId,
+            psychologist_id: membership.userId,
+            starts_at: input.startsAt,
+            ends_at: input.endsAt,
+            session_price: input.sessionPrice,
+            status: input.status ?? "scheduled",
+            location: emptyToNull(input.location),
+            series_id: input.seriesId ?? null,
+          }),
+        )
+        .select(SESSION_SELECT_COLUMNS_LEGACY)
+        .single());
+    }
   }
 
   if (error) {
@@ -2357,40 +2445,68 @@ export async function updateSession(sessionId: string, input: UpdateSessionInput
 
   const client = ensureClient();
   const membership = await getCurrentMembership();
+  const nextPayload: Record<string, unknown> = {
+    patient_id: input.patientId,
+    starts_at: input.startsAt,
+    ends_at: input.endsAt,
+    session_price: input.sessionPrice,
+    billing_mode: input.billingMode ?? "per_session",
+    billing_amount: input.billingAmount ?? input.sessionPrice,
+    location: emptyToNull(input.location),
+  };
+
+  if (input.status) {
+    nextPayload.status = input.status;
+  }
+
   let { data, error } = await client
     .from("sessions")
-    .update({
-      patient_id: input.patientId,
-      starts_at: input.startsAt,
-      ends_at: input.endsAt,
-      session_price: input.sessionPrice,
-      billing_mode: input.billingMode ?? "per_session",
-      billing_amount: input.billingAmount ?? input.sessionPrice,
-      location: emptyToNull(input.location),
-      status: input.status ?? "confirmed",
-    })
+    .update(nextPayload)
     .eq("id", sessionId)
     .select(SESSION_SELECT_COLUMNS)
     .single();
+
+  if (isMissingScheduledStatusError(error)) {
+    ({ data, error } = await client
+      .from("sessions")
+      .update(withLegacyConfirmedStatus(nextPayload))
+      .eq("id", sessionId)
+      .select(SESSION_SELECT_COLUMNS)
+      .single());
+  }
 
   if (isMissingBillingSchemaError(error)) {
     if ((input.billingMode ?? "per_session") === "monthly") {
       ensureMonthlyBillingSchemaAvailable();
     }
 
+    const legacyPayload: Record<string, unknown> = {
+      patient_id: input.patientId,
+      starts_at: input.startsAt,
+      ends_at: input.endsAt,
+      session_price: input.sessionPrice,
+      location: emptyToNull(input.location),
+    };
+
+    if (input.status) {
+      legacyPayload.status = input.status;
+    }
+
     ({ data, error } = await client
       .from("sessions")
-      .update({
-        patient_id: input.patientId,
-        starts_at: input.startsAt,
-        ends_at: input.endsAt,
-        session_price: input.sessionPrice,
-        location: emptyToNull(input.location),
-        status: input.status ?? "confirmed",
-      })
+      .update(legacyPayload)
       .eq("id", sessionId)
       .select(SESSION_SELECT_COLUMNS_LEGACY)
       .single());
+
+    if (isMissingScheduledStatusError(error)) {
+      ({ data, error } = await client
+        .from("sessions")
+        .update(withLegacyConfirmedStatus(legacyPayload))
+        .eq("id", sessionId)
+        .select(SESSION_SELECT_COLUMNS_LEGACY)
+        .single());
+    }
   }
 
   if (error) {

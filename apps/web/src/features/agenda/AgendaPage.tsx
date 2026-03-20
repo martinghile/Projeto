@@ -22,7 +22,7 @@ import type {
   SessionItem,
   SessionScheduleMode,
 } from "../../lib/supabase/types";
-import { formatTimeRange } from "../../lib/utils/format";
+import { formatTimeRange, statusLabel } from "../../lib/utils/format";
 
 type CalendarView = "week" | "month";
 
@@ -47,6 +47,14 @@ interface PendingConflictState {
 }
 
 const calendarWeekdays = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"];
+
+function getSessionDisplayStatus(session: SessionItem): SessionItem["status"] {
+  if (session.status === "completed" || session.status === "cancelled" || session.status === "missed") {
+    return session.status;
+  }
+
+  return session.confirmationStatus === "confirmed" ? "confirmed" : "scheduled";
+}
 
 function cloneDate(value: Date) {
   return new Date(value.getTime());
@@ -221,7 +229,7 @@ function buildRecurringOccurrences(form: SessionFormState, rangeEnd: Date): Crea
       billingMode: form.billingMode,
       billingAmount: form.billingMode === "monthly" ? Number(form.monthlyAmount) : Number(form.sessionPrice),
       location: form.location,
-      status: "confirmed",
+      status: "scheduled",
     });
     cursor.setDate(cursor.getDate() + 7);
   }
@@ -345,6 +353,7 @@ export function AgendaPage() {
     return accumulator;
   }, {});
   const selectedSession = sessions.find((session) => session.id === selectedSessionId) ?? null;
+  const selectedSessionDisplayStatus = selectedSession ? getSessionDisplayStatus(selectedSession) : null;
   const activePatients = patients.filter((patient) => patient.isActive);
   const selectablePatients = editingSession
     ? patients.filter((patient) => patient.isActive || patient.id === editingSession.patientId)
@@ -397,7 +406,7 @@ export function AgendaPage() {
         billingMode: effectiveBillingMode,
         billingAmount: effectiveBillingAmount,
         location: form.location,
-        status: editingSession?.status ?? "confirmed",
+        status: editingSession?.status ?? "scheduled",
       };
 
       const recurring = !editingSession && form.scheduleMode === "weekly";
@@ -525,10 +534,8 @@ export function AgendaPage() {
   }
 
   function renderSessionBox(session: SessionItem, compact = false) {
-    const colorVariant =
-      session.status === "confirmed" && session.confirmationStatus !== "confirmed"
-        ? "awaiting-confirmation"
-        : session.status;
+    const displayStatus = getSessionDisplayStatus(session);
+    const colorVariant = displayStatus === "scheduled" ? "awaiting-confirmation" : displayStatus;
 
     return (
       <article
@@ -802,7 +809,7 @@ export function AgendaPage() {
                           {formatTimeRange(session.startsAt, session.endsAt)}
                         </p>
                       </div>
-                      <StatusBadge status={session.status} />
+                      <StatusBadge status={getSessionDisplayStatus(session)} />
                     </div>
                   ))}
                   {pendingConflict.conflicts.length > conflictPreview.length ? (
@@ -879,7 +886,20 @@ export function AgendaPage() {
                 <p className="muted">{selectedSession.location ?? "Sem local definido"}</p>
               </div>
               <div className="selected-session-card__meta">
-                <StatusBadge status={selectedSession.status} />
+                {selectedSessionDisplayStatus ? (
+                  <span
+                    className={`status-badge status-badge--${selectedSessionDisplayStatus}`}
+                    title={
+                      selectedSessionDisplayStatus === "scheduled"
+                        ? "Sessao aguardando confirmacao do paciente."
+                        : undefined
+                    }
+                  >
+                    {selectedSessionDisplayStatus === "scheduled"
+                      ? "Aguardando confirmacao"
+                      : statusLabel(selectedSessionDisplayStatus)}
+                  </span>
+                ) : null}
                 <button
                   className="close-button"
                   type="button"

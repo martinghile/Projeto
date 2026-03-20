@@ -1,7 +1,7 @@
 create extension if not exists pgcrypto;
 
 create type public.user_role as enum ('owner', 'therapist', 'assistant');
-create type public.session_status as enum ('confirmed', 'cancelled', 'missed', 'completed');
+create type public.session_status as enum ('scheduled', 'confirmed', 'cancelled', 'missed', 'completed');
 create type public.payment_status as enum ('pending', 'paid', 'overdue', 'cancelled');
 create type public.anamnesis_status as enum ('draft', 'sent', 'completed');
 create type public.reminder_status as enum ('pending', 'sent', 'failed');
@@ -64,7 +64,7 @@ create table if not exists public.sessions (
   starts_at timestamptz not null,
   ends_at timestamptz not null,
   session_price numeric(10, 2) not null,
-  status public.session_status not null default 'confirmed',
+  status public.session_status not null default 'scheduled',
   location text,
   notes text,
   reminder_sent_at timestamptz,

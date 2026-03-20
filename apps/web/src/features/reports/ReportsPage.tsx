@@ -6,7 +6,7 @@ import { useAppSettings } from "../settings/useAppSettings";
 import { fetchReportSnapshot } from "../../lib/supabase/services";
 import type { ReportSnapshot } from "../../lib/supabase/types";
 import { exportFinancialReportPdf, exportSessionsReportPdf } from "../../lib/utils/reportPdf";
-import { formatCurrency, formatDate, formatDateTime } from "../../lib/utils/format";
+import { formatCurrency, formatDate, formatDateTime, statusLabel } from "../../lib/utils/format";
 
 function startOfMonth(value: Date) {
   return new Date(value.getFullYear(), value.getMonth(), 1);
@@ -189,7 +189,8 @@ export function ReportsPage() {
             <span className="eyebrow">Sessoes do periodo</span>
             <strong>{snapshot.completedSessions} realizadas</strong>
             <p className="muted">
-              {snapshot.sessionSummary.find((item) => item.status === "confirmed")?.count ?? 0} confirmadas • {snapshot.missedSessions} faltas
+              {snapshot.sessionSummary.find((item) => item.status === "scheduled")?.count ?? 0} agendadas •{" "}
+              {snapshot.sessionSummary.find((item) => item.status === "confirmed")?.count ?? 0} confirmadas
             </p>
           </div>
         </div>
@@ -286,7 +287,7 @@ export function ReportsPage() {
                 </div>
                 <div className="list-row__end">
                   <strong>{formatCurrency(session.sessionPrice)}</strong>
-                  <span className="muted">{session.status}</span>
+                  <span className="muted">{statusLabel(session.status)}</span>
                 </div>
               </article>
             ))}

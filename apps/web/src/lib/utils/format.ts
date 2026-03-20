@@ -33,6 +33,7 @@ export function formatTimeRange(startsAt: string, endsAt: string) {
 
 export function statusLabel(status: string) {
   const labels: Record<string, string> = {
+    scheduled: "Agendada",
     confirmed: "Confirmado",
     cancelled: "Cancelado",
     missed: "Faltou",
