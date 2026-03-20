@@ -4,7 +4,9 @@ import { createServer } from "./server/createServer.js";
 import { WhatsAppConnectionManager } from "./whatsapp/WhatsAppConnectionManager.js";
 
 async function bootstrap() {
-  const manager = new WhatsAppConnectionManager();
+  const manager = new WhatsAppConnectionManager(async () => {
+    await runReminderCycle(manager);
+  });
 
   const app = createServer(manager);
   const server = app.listen(config.port, () => {

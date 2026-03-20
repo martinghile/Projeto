@@ -77,6 +77,10 @@ function createEmptySnapshot(status: WhatsAppConnectionStatus = "disconnected"):
 export class WhatsAppConnectionManager {
   private readonly states = new Map<string, TenantClientState>();
 
+  constructor(
+    private readonly onReady?: (tenantId: string) => Promise<void>,
+  ) {}
+
   private async waitBeforeRetry(attempt: number) {
     const retryDelayMs = 1200 * (attempt + 1);
     await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
@@ -386,6 +390,12 @@ export class WhatsAppConnectionManager {
         lastSeenAt: state.lastSeenAt,
         lastError: null,
       });
+
+      if (this.onReady) {
+        void this.onReady(state.tenantId).catch((error) => {
+          console.error(`[whatsapp] falha ao processar lembretes apos conectar ${state.tenantId}:`, error);
+        });
+      }
     });
 
     state.client.on("auth_failure", async (message: string) => {
