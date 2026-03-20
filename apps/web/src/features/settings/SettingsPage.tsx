@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { SectionCard } from "../../components/SectionCard";
 import type { WhatsAppConnectionSnapshot } from "../../lib/supabase/types";
@@ -557,6 +557,40 @@ export function SettingsPage() {
             </div>
           </form>
         )}
+      </SectionCard>
+
+      <SectionCard title="Privacidade e LGPD" subtitle="Camada minima de orientacao para apresentacao e operacao responsavel do sistema.">
+        <div className="stack-list">
+          <div className="info-strip">
+            <strong>Dados sensiveis</strong>
+            <p className="muted">
+              Prontuario, anamnese e dados de saude exigem cuidado extra. Compartilhe acessos apenas com pessoas
+              autorizadas e mantenha o escopo do tenant restrito a sua clinica.
+            </p>
+          </div>
+
+          <div className="info-strip">
+            <strong>Direitos do titular</strong>
+            <p className="muted">
+              Para uso real, a clinica deve definir como atende pedidos de acesso, correcao, eliminacao, exportacao e
+              informacoes sobre o tratamento dos dados.
+            </p>
+          </div>
+
+          <div className="info-strip">
+            <strong>Retencao</strong>
+            <p className="muted">
+              Documente prazos de guarda de cadastro, agenda, financeiro e prontuario. O modo demonstracao do sistema
+              continua usando somente dados temporarios e ficticios.
+            </p>
+          </div>
+        </div>
+
+        <div className="legal-links">
+          <Link className="text-link" to="/privacidade">
+            Abrir resumo publico de privacidade
+          </Link>
+        </div>
       </SectionCard>
 
       <SectionCard title="WhatsApp" subtitle="Conecte o numero da clinica via QR Code para liberar os lembretes automaticos.">

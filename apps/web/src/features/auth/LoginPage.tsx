@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { ThemeToggle } from "../../components/ThemeToggle";
 import { isSupabaseConfigured } from "../../lib/supabase/client";
@@ -110,9 +110,15 @@ export function LoginPage() {
           <strong>{isSupabaseConfigured ? "Conexao pronta" : "Passo seguinte"}</strong>
           <p className="muted">
             {isSupabaseConfigured
-              ? "Voce pode entrar com sua conta real ou abrir uma demonstracao temporaria com dados locais que expiram sozinhos."
+              ? "Voce pode entrar com sua conta real ou abrir uma demonstracao temporaria com dados ficticios locais que expiram sozinhos."
               : "Crie apps/web/.env.local com VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY para sair do modo demo."}
           </p>
+        </div>
+
+        <div className="legal-links">
+          <Link className="text-link" to="/privacidade">
+            Privacidade e LGPD
+          </Link>
         </div>
       </section>
     </div>

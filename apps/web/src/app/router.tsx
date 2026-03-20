@@ -11,6 +11,7 @@ import { FinancialPage } from "../features/financial/FinancialPage";
 import { ReportsPage } from "../features/reports/ReportsPage";
 import { SettingsPage } from "../features/settings/SettingsPage";
 import { PublicAnamnesisPage } from "../features/patients/PublicAnamnesisPage";
+import { PrivacyPage } from "../features/legal/PrivacyPage";
 
 function ProtectedLayout() {
   const { user, loading } = useAuth();
@@ -34,6 +35,7 @@ export function AppRouter() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/privacidade" element={<PrivacyPage />} />
       <Route path="/anamnesis/:shareToken" element={<PublicAnamnesisPage />} />
       <Route element={<ProtectedLayout />}>
         <Route path="/" element={<DashboardPage />} />

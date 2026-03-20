@@ -34,7 +34,7 @@ Base inicial de um SaaS para psicologos com:
 4. Preencha `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` e `VITE_WHATSAPP_SERVICE_URL`.
 5. Copie `apps/whatsapp/.env.example` para `apps/whatsapp/.env`.
 6. Preencha `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `WHATSAPP_ALLOWED_ORIGINS` e os demais parametros do servico.
-7. Execute no SQL Editor do Supabase as migrations [0001_initial_schema.sql](/Users/alessandro/dev/ClinGestor/supabase/migrations/0001_initial_schema.sql), [0002_public_anamnesis_rpc.sql](/Users/alessandro/dev/ClinGestor/supabase/migrations/0002_public_anamnesis_rpc.sql), [0003_add_patient_cpf_address.sql](/Users/alessandro/dev/ClinGestor/supabase/migrations/0003_add_patient_cpf_address.sql), [0004_patient_structured_address.sql](/Users/alessandro/dev/ClinGestor/supabase/migrations/0004_patient_structured_address.sql), [0005_patient_address_complement.sql](/Users/alessandro/dev/ClinGestor/supabase/migrations/0005_patient_address_complement.sql), [0006_session_series.sql](/Users/alessandro/dev/ClinGestor/supabase/migrations/0006_session_series.sql) e [0007_whatsapp_automation.sql](/Users/alessandro/dev/ClinGestor/supabase/migrations/0007_whatsapp_automation.sql).
+7. Execute no SQL Editor do Supabase todas as migrations da pasta [supabase/migrations](/Users/alessandro/dev/ClinGestor/supabase/migrations) em ordem numerica.
 8. Rode `npm run dev:web` para a versao web responsiva.
 9. Rode `npm run dev:desktop` para abrir o app Electron apontando para a web local.
 10. Rode `npm run dev:whatsapp` para subir o servico de QR Code, cron e leitura de mensagens.
@@ -54,6 +54,7 @@ Base inicial de um SaaS para psicologos com:
 
 - Arquitetura completa: [docs/architecture.md](/Users/alessandro/dev/ClinGestor/docs/architecture.md)
 - Deploy em nuvem: [docs/cloud-deployment.md](/Users/alessandro/dev/ClinGestor/docs/cloud-deployment.md)
+- Privacidade e LGPD: [docs/privacy-and-lgpd.md](/Users/alessandro/dev/ClinGestor/docs/privacy-and-lgpd.md)
 - Schema inicial: [supabase/migrations/0001_initial_schema.sql](/Users/alessandro/dev/ClinGestor/supabase/migrations/0001_initial_schema.sql)
 - RPC publica da anamnese: [supabase/migrations/0002_public_anamnesis_rpc.sql](/Users/alessandro/dev/ClinGestor/supabase/migrations/0002_public_anamnesis_rpc.sql)
 - Serie semanal da agenda: [supabase/migrations/0006_session_series.sql](/Users/alessandro/dev/ClinGestor/supabase/migrations/0006_session_series.sql)
@@ -80,8 +81,9 @@ Para publicar a versao web na Vercel:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
    - `VITE_WHATSAPP_SERVICE_URL=/whatsapp-proxy`
+   - `WHATSAPP_SERVICE_BASE_URL=https://whatsapp.seudominio.com`
 5. Faca o deploy.
 
 O arquivo [vercel.json](/Users/alessandro/dev/ClinGestor/apps/web/vercel.json) ja configura:
 - rewrite SPA para o React Router
-- proxy do WhatsApp em `/whatsapp-proxy/*` para `http://34.69.45.21:4100/*`
+- proxy interno do WhatsApp em `/whatsapp-proxy/*` sem expor a URL da infraestrutura no frontend

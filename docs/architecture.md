@@ -155,7 +155,10 @@ apps/web/src
 - RLS em todas as tabelas de negocio
 - bucket privado para comprovantes
 - `medical_records.private_notes` acessivel apenas a usuarios autenticados do tenant
-- sugestao futura: logs de auditoria para leitura/edicao de prontuario
+- links publicos de anamnese com expiracao e identificacao reduzida no frontend publico
+- registro minimo de abertura do link publico da anamnese
+- modo demonstracao com dados ficticios e temporarios
+- sugestao futura: logs de auditoria para leitura/edicao de prontuario e eventos administrativos
 
 ## Escalabilidade
 

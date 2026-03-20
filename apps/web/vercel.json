@@ -7,7 +7,7 @@
   "rewrites": [
     {
       "source": "/whatsapp-proxy/:path*",
-      "destination": "http://34.69.45.21/:path*"
+      "destination": "/api/whatsapp-proxy/:path*"
     },
     {
       "source": "/(.*)",

@@ -118,7 +118,7 @@ export function PatientProfilePage() {
     try {
       await generateAnamnesisLink(currentPatientId);
       await loadDetail();
-      setFeedback("Link de anamnese gerado com sucesso.");
+      setFeedback("Link de anamnese gerado com sucesso. O link expira automaticamente em 7 dias.");
       setTab("Anamnese");
     } catch (exception) {
       const message = exception instanceof Error ? exception.message : "Nao foi possivel gerar o link.";
@@ -349,6 +349,11 @@ export function PatientProfilePage() {
               <p className="muted">
                 {detail.anamnesis?.shareToken ? anamnesisUrl : "Ainda nao foi gerado um link compartilhavel."}
               </p>
+              {detail.anamnesis?.shareToken ? (
+                <p className="muted">
+                  O formulario publico nao exibe o nome completo do paciente e o link expira automaticamente.
+                </p>
+              ) : null}
               <div className="button-row">
                 <button className="primary-button" type="button" disabled={generatingLink} onClick={handleGenerateLink}>
                   {generatingLink ? "Gerando..." : detail.anamnesis?.shareToken ? "Regenerar link" : "Gerar link"}

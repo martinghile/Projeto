@@ -1083,6 +1083,42 @@ textarea {
   font-weight: 700;
 }
 
+.legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.text-link {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.text-link:hover {
+  text-decoration: underline;
+}
+
+.consent-box {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: rgba(var(--brand-blue-rgb), 0.08);
+}
+
+.consent-box input {
+  margin-top: 0.2rem;
+}
+
+.consent-box span {
+  font-weight: 600;
+  line-height: 1.5;
+}
+
 .info-strip {
   border-radius: 18px;
   padding: 1rem;

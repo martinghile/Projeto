@@ -44,6 +44,8 @@ const DEMO_STORAGE_KEY = "psicogestao-demo-store";
 const APP_SETTINGS_KEY = "psicogestao-app-settings";
 const DEMO_SESSION_KEY = "clinplanner-demo-session";
 const DEMO_SESSION_DURATION_MS = 15 * 60 * 1000;
+const PUBLIC_ANAMNESIS_LINK_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+const PUBLIC_ANAMNESIS_PATIENT_LABEL = "Paciente convidado(a)";
 const SESSION_SELECT_COLUMNS =
   "id, patient_id, starts_at, ends_at, status, confirmation_status, session_price, billing_mode, billing_amount, location, series_id, patients(full_name)";
 const SESSION_SELECT_COLUMNS_LEGACY =
@@ -1701,7 +1703,7 @@ export async function updatePatient(patientId: string, input: UpdatePatientInput
 
 export async function generateAnamnesisLink(patientId: string) {
   const shareToken = crypto.randomUUID();
-  const shareExpiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString();
+  const shareExpiresAt = new Date(Date.now() + PUBLIC_ANAMNESIS_LINK_DURATION_MS).toISOString();
 
   if (shouldUseDemoMode()) {
     const store = readDemoStore();
@@ -1794,7 +1796,7 @@ export async function fetchPublicAnamnesisByToken(shareToken: string): Promise<P
     }
 
     return {
-      patientName: detail.patient.fullName,
+      patientName: PUBLIC_ANAMNESIS_PATIENT_LABEL,
       status: detail.anamnesis.status,
       answers: detail.anamnesis.answers,
       shareToken: detail.anamnesis.shareToken ?? shareToken,
@@ -1818,7 +1820,7 @@ export async function fetchPublicAnamnesisByToken(shareToken: string): Promise<P
   const row = data[0];
 
   return {
-    patientName: row.patient_name,
+    patientName: row.patient_name ?? PUBLIC_ANAMNESIS_PATIENT_LABEL,
     status: row.status,
     answers: row.answers ?? {},
     shareToken,

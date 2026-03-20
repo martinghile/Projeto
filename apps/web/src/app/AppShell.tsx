@@ -135,7 +135,7 @@ export function AppShell({ children }: AppShellProps) {
               </span>
               <p className="muted small">
                 {isDemo
-                  ? "Voce esta em uma sessao local de apresentacao. Tudo que for criado aqui expira automaticamente."
+                  ? "Voce esta em uma sessao local de apresentacao com dados ficticios. Tudo que for criado aqui expira automaticamente."
                   : "Auth, banco e storage estao prontos para uso com o projeto do Supabase."}
               </p>
             </div>

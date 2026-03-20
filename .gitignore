@@ -8,6 +8,8 @@ dist
 .env.local
 .env.production
 .env.*.local
+.vercel
+apps/web/.vercel
 coverage
 supabase/.temp
 apps/web/.vite

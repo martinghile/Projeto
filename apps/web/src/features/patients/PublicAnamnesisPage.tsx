@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useParams } from "react-router-dom";
 
 import { fetchPublicAnamnesisByToken, submitPublicAnamnesis } from "../../lib/supabase/services";
@@ -27,6 +28,31 @@ export function PublicAnamnesisPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
+
+  useEffect(() => {
+    let robotsTag = document.querySelector('meta[name="robots"]') as HTMLMetaElement | null;
+    let createdTag = false;
+
+    if (!robotsTag) {
+      robotsTag = document.createElement("meta");
+      robotsTag.name = "robots";
+      document.head.appendChild(robotsTag);
+      createdTag = true;
+    }
+
+    const previousContent = robotsTag.content;
+    robotsTag.content = "noindex,nofollow";
+
+    return () => {
+      if (createdTag) {
+        robotsTag?.remove();
+        return;
+      }
+
+      robotsTag.content = previousContent;
+    };
+  }, []);
 
   useEffect(() => {
     fetchPublicAnamnesisByToken(shareToken)
@@ -56,6 +82,11 @@ export function PublicAnamnesisPage() {
     setError("");
 
     try {
+      if (!consentChecked) {
+        setError("Marque o aceite antes de enviar a anamnese.");
+        return;
+      }
+
       await submitPublicAnamnesis(shareToken, answers);
       setSubmitted(true);
     } catch (exception) {
@@ -80,7 +111,9 @@ export function PublicAnamnesisPage() {
         <p className="eyebrow">Formulario inicial</p>
         <h1>Anamnese</h1>
         <p className="muted">
-          {patientName ? `Formulario de ${patientName}. Responda com calma, em texto livre.` : "Responda com calma, em texto livre."}
+          {patientName
+            ? "Formulario compartilhado com a clinica responsavel. Responda com calma, em texto livre."
+            : "Responda com calma, em texto livre."}
         </p>
 
         {submitted ? (
@@ -90,6 +123,14 @@ export function PublicAnamnesisPage() {
           </div>
         ) : (
           <form className="form-grid" onSubmit={handleSubmit}>
+            <div className="info-strip">
+              <strong>Privacidade do formulario</strong>
+              <p className="muted">
+                Preencha este formulario apenas em um dispositivo de sua confianca. O link possui expiracao e os dados
+                enviados serao usados pela clinica responsavel para fins de atendimento.
+              </p>
+            </div>
+
             {orderedQuestions.map((key) => (
               <label key={key}>
                 {questionLabels[key]}
@@ -108,11 +149,24 @@ export function PublicAnamnesisPage() {
               </label>
             ))}
 
+            <label className="consent-box">
+              <input type="checkbox" checked={consentChecked} onChange={(event) => setConsentChecked(event.target.checked)} />
+              <span>
+                Li o aviso acima e autorizo o envio destas informacoes para a clinica responsavel pelo meu atendimento.
+              </span>
+            </label>
+
             {error ? <p className="error-text">{error}</p> : null}
 
             <button className="primary-button" type="submit" disabled={saving}>
               {saving ? "Enviando..." : "Enviar anamnese"}
             </button>
+
+            <div className="legal-links">
+              <Link className="text-link" to="/privacidade">
+                Ver resumo de privacidade
+              </Link>
+            </div>
           </form>
         )}
       </section>

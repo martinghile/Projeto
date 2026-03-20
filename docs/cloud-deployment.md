@@ -44,6 +44,10 @@ VITE_SUPABASE_ANON_KEY=your-publishable-key
 VITE_WHATSAPP_SERVICE_URL=https://whatsapp.seudominio.com
 ```
 
+Na Vercel, prefira manter o frontend usando `VITE_WHATSAPP_SERVICE_URL=/whatsapp-proxy` e configure a variavel
+servidor `WHATSAPP_SERVICE_BASE_URL=https://whatsapp.seudominio.com` para que a URL real do servico nao fique
+exposta no repositorio ou no bundle publico.
+
 ### Servico do WhatsApp
 
 Use [apps/whatsapp/.env.production.example](/Users/alessandro/dev/ClinGestor/apps/whatsapp/.env.production.example) como base para `apps/whatsapp/.env.production`:
@@ -53,6 +57,8 @@ PORT=4100
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 WHATSAPP_ALLOWED_ORIGINS=https://app.seudominio.com
+WHATSAPP_ALLOW_NULL_ORIGIN=false
+WHATSAPP_ALLOW_FILE_ORIGIN=true
 WHATSAPP_AUTH_DIR=/var/lib/clinplanner-whatsapp/.wwebjs_auth
 WHATSAPP_DEFAULT_COUNTRY_CODE=55
 WHATSAPP_REMINDER_CRON=* * * * *
@@ -118,6 +124,7 @@ Quando o instalador abrir em outra maquina, ele vai usar:
 - `Supabase` configurado e acessivel
 - migrations aplicadas
 - `apps/web/.env.production` preenchido
+- `WHATSAPP_SERVICE_BASE_URL` configurado no host do frontend
 - `apps/whatsapp/.env.production` preenchido
 - pasta de auth do WhatsApp em disco persistente
 - somente uma instancia do servico WhatsApp ativa

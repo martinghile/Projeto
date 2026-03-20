@@ -10,6 +10,26 @@ interface TenantRequest extends Request {
   tenantContext: TenantContext;
 }
 
+function isAllowedCorsOrigin(origin: string | undefined) {
+  if (!origin) {
+    return true;
+  }
+
+  if (config.allowedOrigins.includes(origin)) {
+    return true;
+  }
+
+  if (origin === "null") {
+    return config.allowNullOrigin;
+  }
+
+  if (origin.startsWith("file://")) {
+    return config.allowFileOrigin;
+  }
+
+  return false;
+}
+
 function getBearerToken(request: Request) {
   const header = request.headers.authorization;
 
@@ -26,8 +46,7 @@ export function createServer(manager: WhatsAppConnectionManager) {
   app.use(
     cors({
       origin(origin, callback) {
-        // Electron apps loaded from file:// may send the Origin header as "null".
-        if (!origin || origin === "null" || origin.startsWith("file://") || config.allowedOrigins.includes(origin)) {
+        if (isAllowedCorsOrigin(origin)) {
           callback(null, true);
           return;
         }
