@@ -328,6 +328,17 @@ textarea {
   width: 100%;
 }
 
+.secondary-button--danger {
+  border-color: rgba(240, 107, 125, 0.4);
+  color: var(--danger);
+  background: rgba(240, 107, 125, 0.08);
+}
+
+.secondary-button--danger:hover {
+  border-color: rgba(240, 107, 125, 0.58);
+  background: rgba(240, 107, 125, 0.14);
+}
+
 .tab-button--active {
   background: var(--accent-gradient-soft);
   border-color: var(--primary-soft-strong);
@@ -689,6 +700,10 @@ textarea {
   font-weight: 700;
 }
 
+.field-grid--compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .inline-field {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -932,6 +947,28 @@ textarea {
 
 .close-button:hover {
   background: var(--surface-soft);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgba(6, 13, 31, 0.56);
+  backdrop-filter: blur(8px);
+}
+
+.modal-card {
+  width: min(100%, 760px);
+  display: grid;
+  gap: 1rem;
+  padding: 1.2rem;
+  border-radius: 28px;
+  border: 1px solid var(--border);
+  background: linear-gradient(160deg, var(--panel), rgba(255, 255, 255, 0.03));
+  box-shadow: var(--shadow);
 }
 
 .week-grid,
@@ -1612,6 +1649,7 @@ textarea {
   .split-grid,
   .details-grid,
   .field-grid,
+  .field-grid--compact,
   .report-columns,
   .whatsapp-settings,
   .dashboard-highlight-grid,

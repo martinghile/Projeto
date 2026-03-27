@@ -1,10 +1,11 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { SectionCard } from "../../components/SectionCard";
 import { StatusBadge } from "../../components/StatusBadge";
 import {
   createMedicalRecord,
+  deletePatient,
   fetchPatientDetail,
   generateAnamnesisLink,
   updatePatient,
@@ -24,6 +25,7 @@ const emptyRecordForm = {
 };
 
 export function PatientProfilePage() {
+  const navigate = useNavigate();
   const { patientId = "" } = useParams();
   const [searchParams] = useSearchParams();
   const [detail, setDetail] = useState<PatientDetail | null>(null);
@@ -40,6 +42,7 @@ export function PatientProfilePage() {
   const [patientSubmitting, setPatientSubmitting] = useState(false);
   const [patientError, setPatientError] = useState("");
   const [patientForm, setPatientForm] = useState(emptyPatientForm);
+  const [patientDeleting, setPatientDeleting] = useState(false);
 
   async function loadDetail() {
     setLoading(true);
@@ -219,6 +222,31 @@ export function PatientProfilePage() {
     }
   }
 
+  async function handleDeletePatient() {
+    const confirmed = window.confirm(
+      "Apagar este paciente tambem remove sessoes, anamnese, prontuario e pagamentos vinculados. Deseja continuar?",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setPatientDeleting(true);
+    setPatientError("");
+    setError("");
+    setFeedback("");
+
+    try {
+      await deletePatient(currentPatientId);
+      navigate("/pacientes", { replace: true });
+    } catch (exception) {
+      const message = exception instanceof Error ? exception.message : "Nao foi possivel apagar o paciente.";
+      setPatientError(message);
+    } finally {
+      setPatientDeleting(false);
+    }
+  }
+
   return (
     <div className="page-grid">
       <div className="button-row">
@@ -256,6 +284,14 @@ export function PatientProfilePage() {
             <div className="button-row">
               <button className="primary-button" type="button" onClick={() => setShowPatientForm((value) => !value)}>
                 {showPatientForm ? "Fechar edicao" : "Editar dados"}
+              </button>
+              <button
+                className="secondary-button secondary-button--danger"
+                type="button"
+                disabled={patientDeleting}
+                onClick={() => void handleDeletePatient()}
+              >
+                {patientDeleting ? "Apagando..." : "Apagar paciente"}
               </button>
             </div>
 

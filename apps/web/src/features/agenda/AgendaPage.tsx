@@ -1,9 +1,10 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { SectionCard } from "../../components/SectionCard";
 import { StatusBadge } from "../../components/StatusBadge";
 import {
+  createPatient,
   createSession,
   createSessionSeries,
   deactivatePatient,
@@ -46,7 +47,20 @@ interface PendingConflictState {
   editingSessionId?: string | null;
 }
 
+interface QuickPatientFormState {
+  fullName: string;
+  phone: string;
+  email: string;
+  sessionPrice: string;
+}
+
 const calendarWeekdays = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"];
+const emptyQuickPatientForm: QuickPatientFormState = {
+  fullName: "",
+  phone: "",
+  email: "",
+  sessionPrice: "180",
+};
 
 function getSessionDisplayStatus(session: SessionItem): SessionItem["status"] {
   if (session.status === "completed" || session.status === "cancelled" || session.status === "missed") {
@@ -283,6 +297,7 @@ function agendaBounds() {
 }
 
 export function AgendaPage() {
+  const formRef = useRef<HTMLFormElement | null>(null);
   const bounds = agendaBounds();
   const [view, setView] = useState<CalendarView>("week");
   const [referenceDate, setReferenceDate] = useState<Date>(new Date());
@@ -299,6 +314,10 @@ export function AgendaPage() {
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [pendingConflict, setPendingConflict] = useState<PendingConflictState | null>(null);
   const [form, setForm] = useState<SessionFormState>(buildEmptyForm([], new Date()));
+  const [showQuickPatientForm, setShowQuickPatientForm] = useState(false);
+  const [quickPatientSubmitting, setQuickPatientSubmitting] = useState(false);
+  const [quickPatientError, setQuickPatientError] = useState("");
+  const [quickPatientForm, setQuickPatientForm] = useState<QuickPatientFormState>(emptyQuickPatientForm);
 
   async function loadAgenda(currentView = view, currentDate = referenceDate) {
     setLoading(true);
@@ -339,12 +358,53 @@ export function AgendaPage() {
     loadAgenda(view, referenceDate);
   }, [view, referenceDate]);
 
+  useEffect(() => {
+    if (!showForm) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [showForm]);
+
   function resetForm(nextDate = referenceDate) {
     const activePatients = patients.filter((patient) => patient.isActive);
     setEditingSession(null);
     setPendingConflict(null);
     setForm(buildEmptyForm(activePatients, nextDate));
     setFormError("");
+  }
+
+  function resetQuickPatientForm(defaultSessionPrice = "180") {
+    setQuickPatientForm({
+      ...emptyQuickPatientForm,
+      sessionPrice: defaultSessionPrice,
+    });
+    setQuickPatientError("");
+  }
+
+  function openQuickPatientForm() {
+    resetQuickPatientForm(form.sessionPrice || "180");
+    setShowQuickPatientForm(true);
+  }
+
+  function handleCreateButtonClick() {
+    const shouldClose = showForm && !editingSession;
+
+    if (shouldClose) {
+      setShowForm(false);
+      setShowQuickPatientForm(false);
+      resetForm(referenceDate);
+      return;
+    }
+
+    resetForm(referenceDate);
+    setShowForm(true);
+
+    if (activePatients.length === 0) {
+      openQuickPatientForm();
+    }
   }
 
   const sessionsByDay = sessions.reduce<Record<string, SessionItem[]>>((accumulator, session) => {
@@ -533,6 +593,58 @@ export function AgendaPage() {
     }
   }
 
+  async function handleQuickPatientSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setQuickPatientSubmitting(true);
+    setQuickPatientError("");
+    setFeedback("");
+
+    try {
+      if (!quickPatientForm.fullName.trim()) {
+        throw new Error("Informe o nome do paciente.");
+      }
+
+      if (!quickPatientForm.sessionPrice || Number(quickPatientForm.sessionPrice) <= 0) {
+        throw new Error("Informe um valor de sessao valido.");
+      }
+
+      const createdPatient = await createPatient({
+        fullName: quickPatientForm.fullName.trim(),
+        phone: quickPatientForm.phone.trim(),
+        email: quickPatientForm.email.trim(),
+        cpf: "",
+        zipCode: "",
+        street: "",
+        number: "",
+        complement: "",
+        neighborhood: "",
+        city: "",
+        state: "",
+        birthDate: "",
+        notes: "",
+        sessionPrice: Number(quickPatientForm.sessionPrice),
+      });
+
+      setPatients((current) =>
+        [...current, createdPatient].sort((left, right) => left.fullName.localeCompare(right.fullName)),
+      );
+      setForm((current) => ({
+        ...current,
+        patientId: createdPatient.id,
+        sessionPrice: String(createdPatient.sessionPrice),
+        monthlyAmount: String(createdPatient.sessionPrice),
+      }));
+      setShowQuickPatientForm(false);
+      resetQuickPatientForm(String(createdPatient.sessionPrice));
+      setFeedback("Paciente cadastrado rapidamente e selecionado para a nova sessao.");
+    } catch (exception) {
+      const message = exception instanceof Error ? exception.message : "Nao foi possivel cadastrar o paciente.";
+      setQuickPatientError(message);
+    } finally {
+      setQuickPatientSubmitting(false);
+    }
+  }
+
   function renderSessionBox(session: SessionItem, compact = false) {
     const displayStatus = getSessionDisplayStatus(session);
     const colorVariant = displayStatus === "scheduled" ? "awaiting-confirmation" : displayStatus;
@@ -577,11 +689,7 @@ export function AgendaPage() {
           <button
             className="primary-button"
             type="button"
-            onClick={() => {
-              resetForm(referenceDate);
-              setShowForm((value) => !value);
-            }}
-            disabled={activePatients.length === 0}
+            onClick={handleCreateButtonClick}
           >
             {showForm && !editingSession ? "Fechar formulario" : "Nova sessao"}
           </button>
@@ -631,33 +739,46 @@ export function AgendaPage() {
         </div>
 
         {activePatients.length === 0 && !loading ? (
-          <div className="page-state">Mantenha pelo menos um paciente ativo antes de criar uma sessao.</div>
+          <div className="page-state">
+            <p>Mantenha pelo menos um paciente ativo antes de criar uma sessao.</p>
+            <div className="button-row button-row--compact">
+              <button className="secondary-button" type="button" onClick={() => openQuickPatientForm()}>
+                Cadastro rapido de paciente
+              </button>
+            </div>
+          </div>
         ) : null}
 
         {showForm ? (
-          <form className="form-grid" onSubmit={handleSubmit}>
+          <form ref={formRef} className="form-grid" onSubmit={handleSubmit}>
             <div className="field-grid">
               <label>
                 Paciente
-                <select
-                  className="text-input"
-                  value={form.patientId}
-                  onChange={(event) => {
-                    const selectedPatient = selectablePatients.find((patient) => patient.id === event.target.value);
-                    setForm((current) => ({
-                      ...current,
-                      patientId: event.target.value,
-                      sessionPrice: selectedPatient ? String(selectedPatient.sessionPrice) : current.sessionPrice,
-                      monthlyAmount: selectedPatient ? String(selectedPatient.sessionPrice) : current.monthlyAmount,
-                    }));
-                  }}
-                >
-                  {selectablePatients.map((patient) => (
-                    <option key={patient.id} value={patient.id}>
-                      {patient.fullName}
-                    </option>
-                  ))}
-                </select>
+                <div className="inline-field">
+                  <select
+                    className="text-input"
+                    value={form.patientId}
+                    onChange={(event) => {
+                      const selectedPatient = selectablePatients.find((patient) => patient.id === event.target.value);
+                      setForm((current) => ({
+                        ...current,
+                        patientId: event.target.value,
+                        sessionPrice: selectedPatient ? String(selectedPatient.sessionPrice) : current.sessionPrice,
+                        monthlyAmount: selectedPatient ? String(selectedPatient.sessionPrice) : current.monthlyAmount,
+                      }));
+                    }}
+                  >
+                    {selectablePatients.length === 0 ? <option value="">Cadastre um paciente</option> : null}
+                    {selectablePatients.map((patient) => (
+                      <option key={patient.id} value={patient.id}>
+                        {patient.fullName}
+                      </option>
+                    ))}
+                  </select>
+                  <button className="secondary-button" type="button" onClick={() => openQuickPatientForm()}>
+                    Cadastro rapido
+                  </button>
+                </div>
               </label>
 
               <label>
@@ -868,6 +989,105 @@ export function AgendaPage() {
               </button>
             </div>
           </form>
+        ) : null}
+
+        {showQuickPatientForm ? (
+          <div className="modal-overlay" role="presentation" onClick={() => !quickPatientSubmitting && setShowQuickPatientForm(false)}>
+            <section
+              className="modal-card"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="quick-patient-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="section-card__header">
+                <div>
+                  <h3 id="quick-patient-title">Cadastro rapido de paciente</h3>
+                  <p className="muted">Crie o paciente aqui e continue na agenda sem sair da tela.</p>
+                </div>
+                <button
+                  className="close-button"
+                  type="button"
+                  aria-label="Fechar cadastro rapido"
+                  onClick={() => setShowQuickPatientForm(false)}
+                >
+                  x
+                </button>
+              </div>
+
+              <form className="form-grid" onSubmit={handleQuickPatientSubmit}>
+                <div className="field-grid field-grid--compact">
+                  <label>
+                    Nome
+                    <input
+                      className="text-input"
+                      type="text"
+                      required
+                      value={quickPatientForm.fullName}
+                      onChange={(event) =>
+                        setQuickPatientForm((current) => ({ ...current, fullName: event.target.value }))
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Telefone
+                    <input
+                      className="text-input"
+                      type="tel"
+                      value={quickPatientForm.phone}
+                      onChange={(event) =>
+                        setQuickPatientForm((current) => ({ ...current, phone: event.target.value }))
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Email
+                    <input
+                      className="text-input"
+                      type="email"
+                      value={quickPatientForm.email}
+                      onChange={(event) =>
+                        setQuickPatientForm((current) => ({ ...current, email: event.target.value }))
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Valor da sessao
+                    <input
+                      className="text-input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      required
+                      value={quickPatientForm.sessionPrice}
+                      onChange={(event) =>
+                        setQuickPatientForm((current) => ({ ...current, sessionPrice: event.target.value }))
+                      }
+                    />
+                  </label>
+                </div>
+
+                {quickPatientError ? <p className="error-text">{quickPatientError}</p> : null}
+
+                <div className="button-row">
+                  <button className="primary-button" type="submit" disabled={quickPatientSubmitting}>
+                    {quickPatientSubmitting ? "Salvando..." : "Salvar paciente"}
+                  </button>
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    disabled={quickPatientSubmitting}
+                    onClick={() => setShowQuickPatientForm(false)}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </section>
+          </div>
         ) : null}
 
         {feedback ? <p className="success-text">{feedback}</p> : null}

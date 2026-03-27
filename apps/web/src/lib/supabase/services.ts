@@ -2391,6 +2391,47 @@ export async function deactivatePatient(patientId: string, fromDate = new Date()
   }
 }
 
+export async function deletePatient(patientId: string): Promise<void> {
+  if (shouldUseDemoMode()) {
+    const store = readDemoStore();
+
+    writeDemoStore({
+      ...store,
+      patients: store.patients.filter((patient) => patient.id !== patientId),
+      sessions: store.sessions.filter((session) => session.patientId !== patientId),
+      sessionSeries: store.sessionSeries.filter((series) => series.patientId !== patientId),
+      payments: store.payments.filter((payment) => payment.patientId !== patientId),
+      patientDetails: Object.fromEntries(
+        Object.entries(store.patientDetails).filter(([currentPatientId]) => currentPatientId !== patientId),
+      ),
+    });
+    return;
+  }
+
+  const client = ensureClient();
+  const rpcResult = await client.rpc("delete_patient", { target_patient_id: patientId });
+
+  if (!rpcResult.error) {
+    return;
+  }
+
+  const deletePatientFunctionMissing = isMissingFunctionError(rpcResult.error, "delete_patient");
+
+  if (!deletePatientFunctionMissing) {
+    throw new Error(getErrorMessage(rpcResult.error, "Nao foi possivel excluir o paciente."));
+  }
+
+  const { error } = await client.from("patients").delete().eq("id", patientId);
+
+  if (!error) {
+    return;
+  }
+
+  throw new Error(
+    "A exclusao de pacientes ainda nao esta habilitada no seu Supabase. Rode a migration 0015_delete_patient_rpc.sql no SQL Editor e atualize a pagina.",
+  );
+}
+
 export async function createSession(input: CreateSessionInput): Promise<SessionItem> {
   if (shouldUseDemoMode()) {
     const store = readDemoStore();
