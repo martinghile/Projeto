@@ -351,7 +351,7 @@ export function DashboardPage() {
       <div className="dashboard-detail-grid">
         <SectionCard
           title="Agenda de hoje"
-          ubtitle="Pacientes e horários com leitura direta."
+          subtitle="Pacientes e horários com leitura direta."
           className="section-card--glow"
         >
           <div className="stack-list">
