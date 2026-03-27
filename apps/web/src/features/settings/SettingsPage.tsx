@@ -559,41 +559,23 @@ export function SettingsPage() {
         )}
       </SectionCard>
 
-      <SectionCard title="Privacidade e LGPD" subtitle="Camada minima de orientacao para apresentacao e operacao responsavel do sistema.">
-        <div className="stack-list">
-          <div className="info-strip">
-            <strong>Dados sensiveis</strong>
-            <p className="muted">
-              Prontuario, anamnese e dados de saude exigem cuidado extra. Compartilhe acessos apenas com pessoas
-              autorizadas e mantenha o escopo do tenant restrito a sua clinica.
-            </p>
-          </div>
-
-          <div className="info-strip">
-            <strong>Direitos do titular</strong>
-            <p className="muted">
-              Para uso real, a clinica deve definir como atende pedidos de acesso, correcao, eliminacao, exportacao e
-              informacoes sobre o tratamento dos dados.
-            </p>
-          </div>
-
-          <div className="info-strip">
-            <strong>Retencao</strong>
-            <p className="muted">
-              Documente prazos de guarda de cadastro, agenda, financeiro e prontuario. O modo demonstracao do sistema
-              continua usando somente dados temporarios e ficticios.
-            </p>
-          </div>
+      <SectionCard title="Privacidade" subtitle="Orientacoes de privacidade e uso responsavel do sistema.">
+        <div className="info-strip">
+          <strong>Resumo de privacidade</strong>
+          <p className="muted">
+            As orientacoes de tratamento de dados ficam reunidas em uma pagina separada, para consulta quando
+            necessario, sem poluir a tela de configuracoes.
+          </p>
         </div>
 
         <div className="legal-links">
           <Link className="text-link" to="/privacidade">
-            Abrir resumo publico de privacidade
+            Abrir pagina de privacidade
           </Link>
         </div>
       </SectionCard>
 
-      <SectionCard title="WhatsApp" subtitle="Conecte o numero da clinica via QR Code para liberar os lembretes automaticos.">
+      <SectionCard title="WhatsApp" subtitle="Conecte o numero da clinica por QR Code para liberar os lembretes automaticos.">
         {!whatsAppAvailable ? (
           <div className="info-strip">
             <strong>Integracao indisponivel nesta instancia.</strong>

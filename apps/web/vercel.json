@@ -6,10 +6,6 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/whatsapp-proxy/:path*",
-      "destination": "/api/whatsapp-proxy/:path*"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -2,7 +2,25 @@ import type { Session } from "@supabase/supabase-js";
 
 import type { WhatsAppConnectionSnapshot } from "./supabase/types";
 
-const whatsappServiceUrl = import.meta.env.VITE_WHATSAPP_SERVICE_URL?.replace(/\/$/, "") ?? "";
+function normalizeWhatsAppServiceUrl(rawValue: string | undefined) {
+  const normalized = rawValue?.trim().replace(/\/$/, "") ?? "";
+
+  if (!normalized) {
+    if (typeof window !== "undefined" && window.location.hostname.endsWith("vercel.app")) {
+      return "/api/whatsapp-proxy";
+    }
+
+    return "";
+  }
+
+  if (normalized === "/whatsapp-proxy") {
+    return "/api/whatsapp-proxy";
+  }
+
+  return normalized;
+}
+
+const whatsappServiceUrl = normalizeWhatsAppServiceUrl(import.meta.env.VITE_WHATSAPP_SERVICE_URL);
 
 function ensureServiceUrl() {
   if (!whatsappServiceUrl) {

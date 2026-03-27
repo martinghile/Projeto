@@ -19,6 +19,7 @@ import type { WhatsAppConnectionSnapshot, WhatsAppConnectionStatus } from "../li
 
 const { Client, LocalAuth } = whatsapp;
 type ClientInstance = InstanceType<typeof Client>;
+const INITIALIZATION_TIMEOUT_MS = 45_000;
 
 interface IncomingMessage {
   fromMe: boolean;
@@ -58,8 +59,29 @@ function isRetryableInitializationError(message: string | null | undefined) {
     normalized.includes("execution context was destroyed") ||
     normalized.includes("target closed") ||
     normalized.includes("browser has disconnected") ||
-    normalized.includes("protocol error")
+    normalized.includes("protocol error") ||
+    normalized.includes("tempo limite") ||
+    normalized.includes("timed out")
   );
+}
+
+async function initializeClientWithTimeout(client: ClientInstance) {
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    await Promise.race([
+      client.initialize(),
+      new Promise<never>((_, reject) => {
+        timeoutHandle = setTimeout(() => {
+          reject(new Error("Tempo limite ao inicializar o WhatsApp Web."));
+        }, INITIALIZATION_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+  }
 }
 
 function createEmptySnapshot(status: WhatsAppConnectionStatus = "disconnected"): WhatsAppConnectionSnapshot {
@@ -88,7 +110,7 @@ export class WhatsAppConnectionManager {
 
   private async initializeTenant(state: TenantClientState, attempt: number) {
     try {
-      await state.client.initialize();
+      await initializeClientWithTimeout(state.client);
     } catch (error) {
       state.status = "error";
       state.lastError = error instanceof Error ? error.message : "Falha ao inicializar o WhatsApp.";
