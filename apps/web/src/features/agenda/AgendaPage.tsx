@@ -741,11 +741,7 @@ export function AgendaPage() {
         {activePatients.length === 0 && !loading ? (
           <div className="page-state">
             <p>Mantenha pelo menos um paciente ativo antes de criar uma sessao.</p>
-            <div className="button-row button-row--compact">
-              <button className="secondary-button" type="button" onClick={() => openQuickPatientForm()}>
-                Cadastro rapido de paciente
-              </button>
-            </div>
+            <p>Clique em Nova sessao para abrir o cadastro rapido do primeiro paciente.</p>
           </div>
         ) : null}
 
