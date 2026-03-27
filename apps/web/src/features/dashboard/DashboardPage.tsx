@@ -33,14 +33,14 @@ function buildOrbitMetrics(summary: DashboardSummary) {
     {
       label: "Pacientes em acompanhamento",
       value: summary.activePatients,
-      helper: "Base ativa no consultorio",
+      helper: "Base ativa no consultório",
       percent: clampPercent((summary.activePatients / reference) * 100),
       tone: "mist" as const,
     },
     {
-      label: "Pendencias financeiras",
+      label: "Pendências financeiras",
       value: summary.pendingPayments,
-      helper: "Itens que pedem conferencia",
+      helper: "Itens que pedem conferência",
       percent: clampPercent((summary.pendingPayments / reference) * 100),
       tone: "slate" as const,
     },
@@ -54,7 +54,7 @@ function buildFinancialBars(summary: DashboardSummary) {
 
   if (invoices.length === 0) {
     return [
-      { label: "Carteira limpa", amountLabel: "sem pendencias", percent: 100 },
+      { label: "Carteira limpa", amountLabel: "sem pendências", percent: 100 },
       { label: "Fluxo", amountLabel: "acompanhamento normal", percent: 72 },
       { label: "Reserva", amountLabel: "sem alerta", percent: 48 },
     ];
@@ -195,7 +195,7 @@ export function DashboardPage() {
     fetchDashboardSummary()
       .then((result) => setSummary(result))
       .catch((exception) => {
-        const message = exception instanceof Error ? exception.message : "Nao foi possivel carregar o dashboard.";
+        const message = exception instanceof Error ? exception.message : "Não foi possível carregar o dashboard.";
         setError(message);
       })
       .finally(() => setLoading(false));
@@ -206,7 +206,7 @@ export function DashboardPage() {
   }
 
   if (!summary) {
-    return <div className="page-state">{error || "Nenhum dado disponivel."}</div>;
+    return <div className="page-state">{error || "Nenhum dado disponível."}</div>;
   }
 
   const orbitMetrics = buildOrbitMetrics(summary);
@@ -224,22 +224,22 @@ export function DashboardPage() {
     <div className="page-grid dashboard-page">
       <section className="dashboard-hero">
         <div className="dashboard-hero__copy">
-          <p className="eyebrow">Painel central do consultorio</p>
-          <h3>Visao direta do que precisa de atencao hoje.</h3>
+          <p className="eyebrow">Painel central do consultório</p>
+          <h3>Visão direta do que precisa de atenção hoje.</h3>
           <p className="muted">
-            Abertura com agenda, fluxo financeiro e ritmo do dia para reduzir cliques e dar leitura rapida.
+            Abertura com agenda, fluxo financeiro e ritmo do dia para reduzir cliques e dar leitura rápida.
           </p>
 
           <div className="dashboard-highlight-grid">
             <article className="dashboard-highlight">
               <span className="dashboard-highlight__label">Faturamento recebido</span>
               <strong>{formatCurrency(summary.monthlyRevenue)}</strong>
-              <p className="muted">Total confirmado no mes atual.</p>
+              <p className="muted">Total confirmado no mês atual.</p>
             </article>
             <article className="dashboard-highlight">
               <span className="dashboard-highlight__label">Carga do dia</span>
               <strong>{dayLoadPercent}%</strong>
-              <p className="muted">Relacao entre pacientes ativos e atendimentos previstos.</p>
+              <p className="muted">Relação entre pacientes ativos e atendimentos previstos.</p>
             </article>
             <article className="dashboard-highlight">
               <span className="dashboard-highlight__label">Pressao financeira</span>
@@ -252,7 +252,7 @@ export function DashboardPage() {
         <div className="dashboard-spark-card">
           <div className="dashboard-spark-card__header">
             <div>
-              <p className="eyebrow">Pulso do periodo</p>
+              <p className="eyebrow">Pulso do período</p>
               <strong>{revenueScale}%</strong>
             </div>
             <span className="pill pill--muted">Resumo visual</span>
@@ -265,11 +265,11 @@ export function DashboardPage() {
 
           <div className="dashboard-spark-card__footer">
             <div>
-              <span className="muted small">Recebido no mes</span>
+              <span className="muted small">Recebido no mês</span>
               <strong>{formatCompactCurrency(summary.monthlyRevenue)}</strong>
             </div>
             <div>
-              <span className="muted small">Pendencias abertas</span>
+              <span className="muted small">Pendências abertas</span>
               <strong>{summary.pendingPayments}</strong>
             </div>
           </div>
@@ -278,7 +278,7 @@ export function DashboardPage() {
 
       <section className="kpi-grid">
         <KpiCard
-          label="Sessoes do dia"
+          label="Sessões do dia"
           value={summary.sessionsToday}
           helper="Compromissos previstos para hoje"
           progress={dayLoadPercent}
@@ -292,16 +292,16 @@ export function DashboardPage() {
           accent="mist"
         />
         <KpiCard
-          label="Faturamento do mes"
+          label="Faturamento do mês"
           value={formatCurrency(summary.monthlyRevenue)}
-          helper="Pagamentos confirmados neste mes"
+          helper="Pagamentos confirmados neste mês"
           progress={revenueScale}
           accent="slate"
         />
         <KpiCard
           label="Pagamentos pendentes"
           value={summary.pendingPayments}
-          helper="Cobrancas aguardando baixa"
+          helper="Cobranças aguardando baixa"
           progress={orbitMetrics[2].percent}
           accent="teal"
         />
@@ -310,7 +310,7 @@ export function DashboardPage() {
       <div className="dashboard-insight-grid">
         <SectionCard
           title="Indicadores visuais"
-          subtitle="Leitura comparativa rapida para saber onde esta a maior concentracao."
+          subtitle="Leitura comparativa rápida para saber onde está a maior concentração."
           className="section-card--glow"
         >
           <div className="insight-orbit-grid">
@@ -351,11 +351,11 @@ export function DashboardPage() {
       <div className="dashboard-detail-grid">
         <SectionCard
           title="Agenda de hoje"
-          subtitle="Pacientes e horarios com leitura direta."
+          ubtitle="Pacientes e horários com leitura direta."
           className="section-card--glow"
         >
           <div className="stack-list">
-            {summary.todaySessions.length === 0 ? <div className="page-state">Nenhuma sessao prevista para hoje.</div> : null}
+            {summary.todaySessions.length === 0 ? <div className="page-state">Nenhuma sessão prevista para hoje."</div> : null}
             {summary.todaySessions.map((session) => (
               <article key={session.id} className="list-row">
                 <div>
@@ -372,7 +372,7 @@ export function DashboardPage() {
 
         <SectionCard
           title="Ritmo do dia"
-          subtitle="Distribuicao visual dos horarios ocupados."
+          subtitle="Distribuição visual dos horários ocupados."
           className="section-card--glow"
         >
           <div className="flow-chart">
@@ -387,9 +387,9 @@ export function DashboardPage() {
 
             <div className="flow-chart__summary">
               <article className="flow-chart__summary-card">
-                <span className="eyebrow">Pendencias</span>
+                <span className="eyebrow">Pendências</span>
                 <strong>{summary.pendingInvoices.length}</strong>
-                <p className="muted">Itens financeiros com vencimento proximo.</p>
+                <p className="muted">Itens financeiros com vencimento próximo.</p>
               </article>
               <article className="flow-chart__summary-card">
                 <span className="eyebrow">Proximo foco</span>

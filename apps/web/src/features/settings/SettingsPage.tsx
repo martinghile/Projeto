@@ -389,12 +389,12 @@ export function SettingsPage() {
   }
 
   if (!settings) {
-    return <div className="page-state">{error || loadError || "Sem configuracoes disponiveis."}</div>;
+    return <div className="page-state">{error || loadError || "Nenhuma configuração disponível no momento."}</div>;
   }
 
   return (
     <div className="page-grid">
-      <SectionCard title="Configuracoes" subtitle="Ajustes principais do consultorio e da conta.">
+      <SectionCard title="Configurações" subtitle="Gerencie os principais ajustes do consultório e da conta.">
         <form className="form-grid" onSubmit={handleSubmit}>
           <div className="field-grid">
             <label>
