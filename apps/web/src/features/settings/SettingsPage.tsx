@@ -594,12 +594,11 @@ export function SettingsPage() {
         )}
       </SectionCard>
 
-      <SectionCard title="Privacidade" subtitle="Consulte, em uma pagina separada, as orientacoes de privacidade do sistema.">
+      <SectionCard title="Privacidade" subtitle="Consulte, em uma página dedicada, as orientações de privacidade do sistema.">
         <div className="info-strip">
           <strong>Resumo de privacidade</strong>
           <p className="muted">
-            Reunimos as orientacoes sobre tratamento de dados em uma pagina separada, para consulta quando necessario,
-            sem sobrecarregar a tela de configuracoes.
+            Reunimos as orientações sobre tratamento de dados em uma página dedicada, permitindo consulta sempre que necessário, sem sobrecarregar a tela de configurações.
           </p>
         </div>
 
