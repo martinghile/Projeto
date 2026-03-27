@@ -1322,14 +1322,23 @@ export async function signOut() {
   }
 }
 
-export async function updateCurrentUserPassword(password: string) {
+export async function updateCurrentUserPassword(email: string, currentPassword: string, nextPassword: string) {
   if (shouldUseDemoMode()) {
     throw new Error("Alteracao de senha indisponivel no modo demonstracao.");
   }
 
   const client = ensureClient();
+  const { error: signInError } = await client.auth.signInWithPassword({
+    email,
+    password: currentPassword,
+  });
+
+  if (signInError) {
+    throw new Error("A senha atual nao confere.");
+  }
+
   const { data, error } = await client.auth.updateUser({
-    password,
+    password: nextPassword,
   });
 
   if (error) {

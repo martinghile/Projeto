@@ -8,7 +8,7 @@ export function PrivacyPage() {
         <h1>Como o ClinPlanner trata dados</h1>
         <p className="muted">
           Esta pagina resume como o sistema trata dados durante a demonstracao e na operacao real. Ela nao substitui
-          orientacao juridica, mas organiza o essencial para uma apresentacao profissional do produto.
+          orientacao juridica, mas apresenta de forma clara os cuidados essenciais esperados em producao.
         </p>
 
         <div className="stack-list">
@@ -16,16 +16,16 @@ export function PrivacyPage() {
             <strong>Dados tratados</strong>
             <p className="muted">
               O sistema pode armazenar cadastro de pacientes, agenda, financeiro, prontuario clinico, anamnese e
-              comprovantes. Esses dados dependem de autenticacao, isolamento por tenant e armazenamento privado para
-              anexos financeiros.
+              comprovantes. A protecao dessas informacoes depende de autenticacao, isolamento por tenant e
+              armazenamento privado para anexos financeiros.
             </p>
           </div>
 
           <div className="info-strip">
             <strong>Base operacional minima</strong>
             <p className="muted">
-              Em producao, a clinica responsavel deve informar finalidade, base legal, prazos de retencao e canal para
-              exercicio dos direitos do titular.
+              Em producao, a clinica responsavel deve informar finalidade, base legal, prazos de retencao e o canal
+              para exercicio dos direitos do titular.
             </p>
           </div>
 
@@ -33,7 +33,7 @@ export function PrivacyPage() {
             <strong>Fluxo publico de anamnese</strong>
             <p className="muted">
               Os links publicos de anamnese possuem expiracao, nao exibem o nome completo do paciente e registram a
-              abertura do link para auditoria minima. Sempre que possivel, compartilhe o link apenas com o titular.
+              abertura do link para auditoria minima. Sempre que possivel, compartilhe esse acesso apenas com o titular.
             </p>
           </div>
 

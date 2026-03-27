@@ -45,6 +45,7 @@ export function SettingsPage() {
   const [shortcutFeedback, setShortcutFeedback] = useState("");
   const [shortcutLoading, setShortcutLoading] = useState<SettingsShortcut | null>(null);
   const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
     nextPassword: "",
     confirmPassword: "",
   });
@@ -144,8 +145,18 @@ export function SettingsPage() {
     setPasswordError("");
     setPasswordFeedback("");
 
+    if (!settings?.email) {
+      setPasswordError("Nao foi possivel identificar a conta atual.");
+      return;
+    }
+
     if (passwordForm.nextPassword.length < 6) {
       setPasswordError("Use pelo menos 6 caracteres na nova senha.");
+      return;
+    }
+
+    if (!passwordForm.currentPassword) {
+      setPasswordError("Informe a senha atual para continuar.");
       return;
     }
 
@@ -154,11 +165,17 @@ export function SettingsPage() {
       return;
     }
 
+    if (passwordForm.currentPassword === passwordForm.nextPassword) {
+      setPasswordError("A nova senha precisa ser diferente da senha atual.");
+      return;
+    }
+
     setPasswordSaving(true);
 
     try {
-      await updateCurrentUserPassword(passwordForm.nextPassword);
+      await updateCurrentUserPassword(settings.email, passwordForm.currentPassword, passwordForm.nextPassword);
       setPasswordForm({
+        currentPassword: "",
         nextPassword: "",
         confirmPassword: "",
       });
@@ -512,6 +529,22 @@ export function SettingsPage() {
           <form className="form-grid" onSubmit={handlePasswordSubmit}>
             <div className="field-grid">
               <label>
+                Senha atual
+                <input
+                  className="text-input"
+                  type="password"
+                  required
+                  value={passwordForm.currentPassword}
+                  onChange={(event) =>
+                    setPasswordForm((current) => ({
+                      ...current,
+                      currentPassword: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label>
                 Nova senha
                 <input
                   className="text-input"
@@ -546,7 +579,9 @@ export function SettingsPage() {
               </label>
             </div>
 
-            <p className="muted">A alteracao vale para o mesmo email usado no login e passa a funcionar imediatamente.</p>
+            <p className="muted">
+              Para confirmar a alteracao, informe a senha atual da conta. A nova senha passa a valer imediatamente.
+            </p>
             {passwordFeedback ? <p className="success-text">{passwordFeedback}</p> : null}
             {passwordError ? <p className="error-text">{passwordError}</p> : null}
 
@@ -559,12 +594,12 @@ export function SettingsPage() {
         )}
       </SectionCard>
 
-      <SectionCard title="Privacidade" subtitle="Orientacoes de privacidade e uso responsavel do sistema.">
+      <SectionCard title="Privacidade" subtitle="Consulte, em uma pagina separada, as orientacoes de privacidade do sistema.">
         <div className="info-strip">
           <strong>Resumo de privacidade</strong>
           <p className="muted">
-            As orientacoes de tratamento de dados ficam reunidas em uma pagina separada, para consulta quando
-            necessario, sem poluir a tela de configuracoes.
+            Reunimos as orientacoes sobre tratamento de dados em uma pagina separada, para consulta quando necessario,
+            sem sobrecarregar a tela de configuracoes.
           </p>
         </div>
 
