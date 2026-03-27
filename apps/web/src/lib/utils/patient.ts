@@ -185,31 +185,18 @@ export function validatePatientForm(form: PatientFormValues) {
     return "Informe o nome do paciente.";
   }
 
-  if (!isValidCpf(form.cpf)) {
+  if (form.cpf.trim() && !isValidCpf(form.cpf)) {
     return "Informe um CPF valido.";
   }
 
-  if (normalizeZipCode(form.zipCode).length !== 8) {
+  if (form.zipCode.trim() && normalizeZipCode(form.zipCode).length !== 8) {
     return "Informe um CEP valido com 8 numeros.";
   }
 
-  if (!form.street.trim()) {
-    return "Informe o logradouro.";
-  }
-
-  if (!form.number.trim()) {
-    return "Informe o numero do endereco.";
-  }
-
-  if (!form.neighborhood.trim()) {
-    return "Informe o bairro.";
-  }
-
-  if (!form.city.trim()) {
-    return "Informe a cidade.";
-  }
-
-  if (!brazilStateOptions.includes(form.state.trim().toUpperCase() as (typeof brazilStateOptions)[number])) {
+  if (
+    form.state.trim() &&
+    !brazilStateOptions.includes(form.state.trim().toUpperCase() as (typeof brazilStateOptions)[number])
+  ) {
     return "Selecione um estado valido.";
   }
 

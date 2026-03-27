@@ -97,7 +97,6 @@ export function PatientFormFields({ form, setForm, showStatusField = false }: Pa
             type="text"
             inputMode="numeric"
             placeholder="000.000.000-00"
-            required
             value={form.cpf}
             onChange={(event) => setForm((current) => ({ ...current, cpf: formatCpf(event.target.value) }))}
           />
@@ -121,7 +120,6 @@ export function PatientFormFields({ form, setForm, showStatusField = false }: Pa
               type="text"
               inputMode="numeric"
               placeholder="00000-000"
-              required
               value={form.zipCode}
               onBlur={() => {
                 if (form.zipCode.replace(/\D/g, "").length === 8) {
@@ -143,7 +141,6 @@ export function PatientFormFields({ form, setForm, showStatusField = false }: Pa
           <input
             className="text-input"
             type="text"
-            required
             value={form.street}
             onChange={(event) => setForm((current) => ({ ...current, street: event.target.value }))}
           />
@@ -154,7 +151,6 @@ export function PatientFormFields({ form, setForm, showStatusField = false }: Pa
           <input
             className="text-input"
             type="text"
-            required
             value={form.number}
             onChange={(event) => setForm((current) => ({ ...current, number: event.target.value }))}
           />
@@ -176,7 +172,6 @@ export function PatientFormFields({ form, setForm, showStatusField = false }: Pa
           <input
             className="text-input"
             type="text"
-            required
             value={form.neighborhood}
             onChange={(event) => setForm((current) => ({ ...current, neighborhood: event.target.value }))}
           />
@@ -187,7 +182,6 @@ export function PatientFormFields({ form, setForm, showStatusField = false }: Pa
           <input
             className="text-input"
             type="text"
-            required
             value={form.city}
             onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))}
           />
@@ -197,7 +191,6 @@ export function PatientFormFields({ form, setForm, showStatusField = false }: Pa
           Estado
           <select
             className="text-input"
-            required
             value={form.state}
             onChange={(event) =>
               setForm((current) => ({ ...current, state: event.target.value.toUpperCase() }))
