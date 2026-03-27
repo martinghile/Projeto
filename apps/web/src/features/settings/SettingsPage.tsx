@@ -463,13 +463,13 @@ export function SettingsPage() {
 
           <div className="button-row">
             <button className="primary-button" type="submit" disabled={saving}>
-              {saving ? "Salvando..." : "Salvar configuracoes"}
+              {saving ? "Salvando..." : "Salvar configurações"}
             </button>
           </div>
         </form>
       </SectionCard>
 
-      <SectionCard title="Resumo tecnico" subtitle="Clique nos blocos para abrir o detalhe de cada item.">
+      <SectionCard title="Resumo técnico" subtitle="Clique nos blocos para abrir o detalhe de cada item.">
         <div className="settings-grid">
           <button
             className={`detail-box detail-box--button ${activeShortcut === "plan" ? "detail-box--active" : ""}`}
@@ -609,7 +609,7 @@ export function SettingsPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title="WhatsApp" subtitle="Conecte o numero da clinica por QR Code para liberar os lembretes automaticos.">
+      <SectionCard title="WhatsApp" subtitle="onecte o número da clínica por meio de QR Code para habilitar o envio de lembretes automáticos.">
         {!whatsAppAvailable ? (
           <div className="info-strip">
             <strong>Integracao indisponivel nesta instancia.</strong>
@@ -640,7 +640,7 @@ export function SettingsPage() {
               ) : null}
               {!whatsAppLoading && !whatsAppConnection?.qrCodeDataUrl ? (
                 <p className="muted">
-                  Clique em conectar para gerar o QR Code ou em atualizar status para consultar a conexao atual.
+                  Clique em Conectar para gerar o QR Code ou em Atualizar status para consultar a conexão atual.
                 </p>
               ) : null}
 
