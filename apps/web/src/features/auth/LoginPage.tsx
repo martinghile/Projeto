@@ -10,8 +10,8 @@ import logoDarkSrc from "../../assets/ClinPlanner.png";
 export function LoginPage() {
   const navigate = useNavigate();
   const { user, signInUser, startDemoUser, isDemo } = useAuth();
-  const [email, setEmail] = useState("psicologa@consultorio.com");
-  const [password, setPassword] = useState("123456");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [theme, setTheme] = useState<ThemeMode>(() => getPreferredTheme());

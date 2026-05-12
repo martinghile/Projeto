@@ -43,7 +43,7 @@ export const config = {
     .map((value) => value.trim())
     .filter(Boolean),
   allowNullOrigin: readBoolean("WHATSAPP_ALLOW_NULL_ORIGIN", false),
-  allowFileOrigin: readBoolean("WHATSAPP_ALLOW_FILE_ORIGIN", true),
+  allowFileOrigin: readBoolean("WHATSAPP_ALLOW_FILE_ORIGIN", false),
   authDir: path.resolve(packageDir, process.env.WHATSAPP_AUTH_DIR ?? "./.wwebjs_auth"),
   defaultCountryCode: process.env.WHATSAPP_DEFAULT_COUNTRY_CODE ?? "55",
   reminderCron: process.env.WHATSAPP_REMINDER_CRON ?? "* * * * *",
