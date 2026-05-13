@@ -1,7 +1,7 @@
 {
   "name": "@psi/whatsapp",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -10,13 +10,15 @@
     "check": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@hapi/boom": "^10.0.1",
     "@supabase/supabase-js": "^2.57.4",
+    "baileys": "^6.7.16",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
     "node-cron": "^4.2.1",
-    "qrcode": "^1.5.4",
-    "whatsapp-web.js": "^1.34.1"
+    "pino": "^9.6.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

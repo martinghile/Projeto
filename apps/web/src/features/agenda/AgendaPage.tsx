@@ -516,19 +516,19 @@ export function AgendaPage() {
   async function persistSchedule(plan: PendingConflictState, deactivateConflictingPatients = false) {
     const targetPatientId = plan.occurrences[0]?.patientId ?? "";
     const conflictSessions = plan.conflicts;
-    const conflictPatientIds = [...new Set(conflictSessions.map((session) => session.patientId))].filter(
-      (patientId) => patientId !== targetPatientId,
-    );
-
-    if (deactivateConflictingPatients) {
-      for (const patientId of conflictPatientIds) {
-        await deactivatePatient(patientId, plan.occurrences[0].startsAt);
-      }
-    }
 
     if (conflictSessions.length > 0) {
       for (const session of conflictSessions) {
         await updateSessionStatus(session.id, "cancelled");
+      }
+    }
+
+    if (deactivateConflictingPatients) {
+      const conflictPatientIds = [...new Set(conflictSessions.map((s) => s.patientId))].filter(
+        (pid) => pid !== targetPatientId,
+      );
+      for (const patientId of conflictPatientIds) {
+        await deactivatePatient(patientId, plan.occurrences[0].startsAt);
       }
     }
 
@@ -606,6 +606,12 @@ export function AgendaPage() {
 
       if (!quickPatientForm.sessionPrice || Number(quickPatientForm.sessionPrice) <= 0) {
         throw new Error("Informe um valor de sessao valido.");
+      }
+
+      const trimmedName = quickPatientForm.fullName.trim().toLowerCase();
+      const duplicate = patients.find((p) => p.fullName.toLowerCase() === trimmedName && p.isActive);
+      if (duplicate) {
+        throw new Error(`Ja existe um paciente ativo com o nome "${duplicate.fullName}". Selecione-o na lista.`);
       }
 
       const createdPatient = await createPatient({

@@ -39,6 +39,7 @@ import {
   normalizeZipCode,
 } from "../utils/patient";
 import { getErrorMessage } from "../utils/errors";
+import { encryptField, decryptField, encryptNullable, decryptNullable, isEncryptionEnabled } from "../utils/crypto";
 
 const DEMO_STORAGE_KEY = "psicogestao-demo-store";
 const APP_SETTINGS_KEY = "psicogestao-app-settings";
@@ -627,15 +628,18 @@ async function syncSupabasePaymentForSession(
     const monthlyWindowEnd = new Date(monthlyWindowStart.getTime());
     monthlyWindowEnd.setMonth(monthlyWindowEnd.getMonth() + 1);
 
-    const { data: activeMonthlySessions, error: activeMonthlySessionsError } = await client
+    let monthlySessionsQuery = client
       .from("sessions")
       .select("id")
       .eq("patient_id", session.patientId)
-      .eq("series_id", session.seriesId ?? "")
       .eq("billing_mode", "monthly")
       .gte("starts_at", monthlyWindowStart.toISOString())
       .lt("starts_at", monthlyWindowEnd.toISOString())
       .neq("status", "cancelled");
+    monthlySessionsQuery = session.seriesId
+      ? monthlySessionsQuery.eq("series_id", session.seriesId)
+      : monthlySessionsQuery.is("series_id", null);
+    const { data: activeMonthlySessions, error: activeMonthlySessionsError } = await monthlySessionsQuery;
 
     if (activeMonthlySessionsError) {
       if (isMissingBillingSchemaError(activeMonthlySessionsError)) {
@@ -644,14 +648,16 @@ async function syncSupabasePaymentForSession(
       throw activeMonthlySessionsError;
     }
 
-    const { data: existingMonthlyPayment, error: existingMonthlyPaymentError } = await client
+    let monthlyPaymentQuery = client
       .from("payments")
       .select("id, status")
       .eq("patient_id", session.patientId)
-      .eq("series_id", session.seriesId ?? "")
       .eq("billing_mode", "monthly")
-      .eq("billing_reference_month", referenceMonth)
-      .maybeSingle();
+      .eq("billing_reference_month", referenceMonth);
+    monthlyPaymentQuery = session.seriesId
+      ? monthlyPaymentQuery.eq("series_id", session.seriesId)
+      : monthlyPaymentQuery.is("series_id", null);
+    const { data: existingMonthlyPayment, error: existingMonthlyPaymentError } = await monthlyPaymentQuery.maybeSingle();
 
     if (existingMonthlyPaymentError) {
       if (isMissingBillingSchemaError(existingMonthlyPaymentError)) {
@@ -1545,7 +1551,7 @@ export async function createPatient(input: CreatePatientInput): Promise<PatientI
     input_address_city: emptyToNull(input.city),
     input_address_state: emptyToNull(input.state)?.toUpperCase(),
     input_birth_date: emptyToNull(input.birthDate),
-    input_notes: emptyToNull(input.notes),
+    input_notes: await encryptNullable(emptyToNull(input.notes)),
     input_session_price: input.sessionPrice,
   };
 
@@ -1553,7 +1559,9 @@ export async function createPatient(input: CreatePatientInput): Promise<PatientI
   const createPatientFunctionMissing = isMissingFunctionError(rpcResult.error, "create_patient");
 
   if (!rpcResult.error && rpcResult.data) {
-    return mapPatient(rpcResult.data);
+    const patient = mapPatient(rpcResult.data);
+    patient.notes = await decryptNullable(patient.notes);
+    return patient;
   }
 
   const membership = await getCurrentMembership();
@@ -1575,7 +1583,7 @@ export async function createPatient(input: CreatePatientInput): Promise<PatientI
       address_city: patientPayload.input_address_city,
       address_state: patientPayload.input_address_state,
       birth_date: patientPayload.input_birth_date,
-      notes: patientPayload.input_notes,
+      notes: await encryptNullable(patientPayload.input_notes),
       session_price: input.sessionPrice,
       is_active: true,
     })
@@ -1594,7 +1602,9 @@ export async function createPatient(input: CreatePatientInput): Promise<PatientI
     throw new Error(getErrorMessage(error, "Nao foi possivel cadastrar o paciente."));
   }
 
-  return mapPatient(data);
+  const patient = mapPatient(data);
+  patient.notes = await decryptNullable(patient.notes);
+  return patient;
 }
 
 export async function updatePatient(patientId: string, input: UpdatePatientInput): Promise<PatientItem> {
@@ -1693,7 +1703,7 @@ export async function updatePatient(patientId: string, input: UpdatePatientInput
       address_city: emptyToNull(input.city),
       address_state: emptyToNull(input.state)?.toUpperCase(),
       birth_date: emptyToNull(input.birthDate),
-      notes: emptyToNull(input.notes),
+      notes: await encryptNullable(emptyToNull(input.notes)),
       session_price: input.sessionPrice,
       ...(input.isActive !== undefined ? { is_active: input.isActive } : {}),
     })
@@ -1707,7 +1717,9 @@ export async function updatePatient(patientId: string, input: UpdatePatientInput
     throw error;
   }
 
-  return mapPatient(data);
+  const patient = mapPatient(data);
+  patient.notes = await decryptNullable(patient.notes);
+  return patient;
 }
 
 export async function generateAnamnesisLink(patientId: string) {
@@ -1963,8 +1975,11 @@ export async function fetchPatientDetail(patientId: string): Promise<PatientDeta
     throw sessionsResult.error;
   }
 
+  const patientMapped = mapPatient(patientResult.data);
+  patientMapped.notes = await decryptNullable(patientMapped.notes);
+
   return {
-    patient: mapPatient(patientResult.data),
+    patient: patientMapped,
     anamnesis: anamnesisResult.data
       ? {
           id: anamnesisResult.data.id,
@@ -1975,13 +1990,15 @@ export async function fetchPatientDetail(patientId: string): Promise<PatientDeta
           submittedAt: anamnesisResult.data.submitted_at,
         }
       : null,
-    records: ((recordsResult.data ?? []) as any[]).map((row: any) => ({
-      id: row.id,
-      sessionId: row.session_id,
-      createdAt: row.created_at,
-      privateNotes: row.private_notes,
-      clinicalSummary: row.clinical_summary,
-    })),
+    records: await Promise.all(
+      ((recordsResult.data ?? []) as any[]).map(async (row: any) => ({
+        id: row.id,
+        sessionId: row.session_id,
+        createdAt: row.created_at,
+        privateNotes: await decryptField(row.private_notes ?? ""),
+        clinicalSummary: await decryptNullable(row.clinical_summary),
+      })),
+    ),
     payments: (paymentsResult.data ?? []).map(mapPayment),
     sessions: (sessionsResult.data ?? []).map(mapSession),
   };
@@ -2022,6 +2039,10 @@ export async function createMedicalRecord(input: CreateMedicalRecordInput): Prom
 
   const client = ensureClient();
   const membership = await getCurrentMembership();
+
+  const encryptedPrivateNotes = await encryptField(input.privateNotes);
+  const encryptedClinicalSummary = await encryptNullable(emptyToNull(input.clinicalSummary));
+
   const { data, error } = await client
     .from("medical_records")
     .insert({
@@ -2029,8 +2050,8 @@ export async function createMedicalRecord(input: CreateMedicalRecordInput): Prom
       patient_id: input.patientId,
       session_id: input.sessionId,
       psychologist_id: membership.userId,
-      clinical_summary: emptyToNull(input.clinicalSummary),
-      private_notes: input.privateNotes,
+      clinical_summary: encryptedClinicalSummary,
+      private_notes: encryptedPrivateNotes,
     })
     .select("id, session_id, created_at, private_notes, clinical_summary")
     .single();
@@ -2043,8 +2064,8 @@ export async function createMedicalRecord(input: CreateMedicalRecordInput): Prom
     id: data.id,
     sessionId: data.session_id,
     createdAt: data.created_at,
-    privateNotes: data.private_notes,
-    clinicalSummary: data.clinical_summary,
+    privateNotes: await decryptField(data.private_notes),
+    clinicalSummary: await decryptNullable(data.clinical_summary),
   };
 }
 
@@ -3072,9 +3093,13 @@ export async function updateAppSettings(
   };
 }
 
+function sanitizeFileName(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]/g, "_").replace(/\.{2,}/g, ".").slice(0, 100);
+}
+
 export async function uploadReceipt(file: File, tenantId: string, patientId: string) {
   const client = ensureClient();
-  const fileName = `${tenantId}/${patientId}/${Date.now()}-${file.name}`;
+  const fileName = `${tenantId}/${patientId}/${Date.now()}-${sanitizeFileName(file.name)}`;
   const { data, error } = await client.storage.from("payment-receipts").upload(fileName, file, {
     upsert: false,
   });
