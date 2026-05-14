@@ -695,6 +695,14 @@ textarea {
   padding: 0 1rem;
 }
 
+.text-input--disabled {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+  cursor: default;
+}
+
 .text-input:focus,
 .textarea-input:focus {
   outline: none;
@@ -1075,6 +1083,11 @@ textarea {
   border-color: var(--primary-soft-strong);
   box-shadow: 0 0 0 2px var(--primary-soft);
   background: var(--surface-tint);
+}
+
+.detail-box--disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 .detail-box--wide {
