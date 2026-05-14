@@ -1,89 +1,168 @@
 # ClinPlanner
 
-Base inicial de um SaaS para psicologos com:
+SaaS para psicologos com gestao de agenda, pacientes, prontuarios, financeiro e lembretes via WhatsApp.
 
-- `React` para a interface web responsiva
-- `Electron` para o aplicativo desktop
+- `React + Vite + TypeScript` para a interface web responsiva
 - `Supabase` para Auth, PostgreSQL, Storage e API
-- `whatsapp-web.js` para lembretes automaticos via WhatsApp Web com QR Code
+- `Baileys` para lembretes automaticos via WhatsApp (sem Puppeteer, via WebSocket direto)
 
-## Estrutura
+---
+
+## Arquitetura de Deploy
+
+| Camada | Tecnologia | Hospedagem | URL |
+|--------|-----------|------------|-----|
+| Frontend (SPA) | React + Vite | Vercel | `https://clinplanner.vercel.app` |
+| Banco de dados | PostgreSQL | Supabase | `qsbtmnsibxrnecynmhdp.supabase.co` |
+| WhatsApp bot | Node.js + Baileys | Render (free) | `https://clinplanner-whatsapp.onrender.com` |
+
+Repositorio: `https://github.com/martinghile/Projeto`
+
+## Estrutura de pastas
 
 ```text
-.
-|- apps/
-|  |- desktop/   # shell Electron
-|  |- web/       # frontend React + Vite
-|  \- whatsapp/  # servico Node para QR Code, scheduler e mensagens
-|- docs/
-|  \- architecture.md
-|- supabase/
-|  \- migrations/
-|     |- 0001_initial_schema.sql
-|     |- 0006_session_series.sql
-|     \- 0007_whatsapp_automation.sql
-|- .env.example
-\- package.json
+apps/
+  web/                → Frontend React (deploy no Vercel)
+    api/
+      whatsapp-proxy/   → Serverless proxy (Vercel Functions) — desativado, frontend conecta direto no Render
+    src/
+      features/         → Paginas por feature (agenda, auth, patients, settings)
+      lib/
+        supabase/       → services.ts (toda comunicacao com Supabase), types.ts, client.ts
+        utils/          → crypto.ts (criptografia AES-256-GCM), format.ts, patient.ts, etc.
+      components/       → Componentes reutilizaveis (SectionCard, StatusBadge, ThemeToggle)
+  whatsapp/            → Servico WhatsApp (deploy no Render)
+    src/
+      whatsapp/         → WhatsAppConnectionManager.ts (Baileys), useSupabaseAuthState.ts
+      lib/              → repository.ts, messages.ts, phone.ts, supabase.ts, types.ts
+      scheduler/        → reminderScheduler.ts (cron de lembretes automaticos)
+      server/           → createServer.ts (Express API com CORS e JWT)
+supabase/
+  migrations/          → Migrations SQL numeradas (0001 a 0017)
 ```
 
 ## Como rodar localmente
 
-1. Instale Node.js 20 ou superior.
-2. Na raiz do projeto, rode `npm install`.
-3. Copie `.env.example` para `apps/web/.env.local`.
-4. Preencha `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` e `VITE_WHATSAPP_SERVICE_URL`.
-5. Copie `apps/whatsapp/.env.example` para `apps/whatsapp/.env`.
-6. Preencha `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `WHATSAPP_ALLOWED_ORIGINS` e os demais parametros do servico.
-7. Execute no SQL Editor do Supabase todas as migrations da pasta [supabase/migrations](/Users/alessandro/dev/ClinGestor/supabase/migrations) em ordem numerica.
-8. Rode `npm run dev:web` para a versao web responsiva.
-9. Rode `npm run dev:desktop` para abrir o app Electron apontando para a web local.
-10. Rode `npm run dev:whatsapp` para subir o servico de QR Code, cron e leitura de mensagens.
-11. Se quiser a interface e o desktop juntos, rode `npm run dev`.
+1. Node.js 20+. Na raiz: `npm install`.
+2. Copie `.env.example` para `apps/web/.env.local` e preencha `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
+3. Copie `apps/whatsapp/.env.example` para `apps/whatsapp/.env` e preencha `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`.
+4. Rode todas as migrations de `supabase/migrations/` no SQL Editor do Supabase (em ordem numerica).
+5. `npm run dev:web` para o frontend. `npm run dev:whatsapp` para o bot.
 
-## Fluxo recomendado no Supabase
+---
 
-1. Crie um projeto.
-2. Ative Email/Password em `Authentication`.
-3. Execute todas as migrations da pasta `supabase/migrations`.
-4. Crie um usuario pelo painel do Supabase Auth ou pela tela de login.
-5. Configure o bucket privado `payment-receipts` se a migration ainda nao o tiver criado.
-6. Em `Configuracoes`, abra a secao `WhatsApp`, clique em `Conectar WhatsApp` e escaneie o QR Code com o numero da clinica.
-7. Deixe o servico `apps/whatsapp` em execucao para processar os lembretes a cada minuto.
+# Diario de Alteracoes
 
-## Documentacao
+## 2026-05-12 — Auditoria de Seguranca
 
-- Arquitetura completa: [docs/architecture.md](/Users/alessandro/dev/ClinGestor/docs/architecture.md)
-- Deploy em nuvem: [docs/cloud-deployment.md](/Users/alessandro/dev/ClinGestor/docs/cloud-deployment.md)
-- Privacidade e LGPD: [docs/privacy-and-lgpd.md](/Users/alessandro/dev/ClinGestor/docs/privacy-and-lgpd.md)
-- Schema inicial: [supabase/migrations/0001_initial_schema.sql](/Users/alessandro/dev/ClinGestor/supabase/migrations/0001_initial_schema.sql)
-- RPC publica da anamnese: [supabase/migrations/0002_public_anamnesis_rpc.sql](/Users/alessandro/dev/ClinGestor/supabase/migrations/0002_public_anamnesis_rpc.sql)
-- Serie semanal da agenda: [supabase/migrations/0006_session_series.sql](/Users/alessandro/dev/ClinGestor/supabase/migrations/0006_session_series.sql)
-- Automacao do WhatsApp: [supabase/migrations/0007_whatsapp_automation.sql](/Users/alessandro/dev/ClinGestor/supabase/migrations/0007_whatsapp_automation.sql)
+Varredura completa identificou 22 vulnerabilidades (3 criticas, 11 altas, 8 medias). Todas corrigidas abaixo.
 
-## Como operar em nuvem
+### 1. Bug critico da Agenda (conflito de horarios)
+- **Arquivo**: `apps/web/src/features/agenda/AgendaPage.tsx` (funcao `persistSchedule`)
+- **Problema**: Ao criar sessao em horario conflitante, cancelava TODAS as sessoes do paciente e podia desativar o paciente inteiro
+- **Correcao**: Cancela apenas sessoes que realmente conflitam. So desativa paciente se usuario clicar "Substituir e inativar antigo"
 
-Para instalar o mesmo sistema em varias maquinas:
+### 2. Cadastro rapido duplicava pacientes
+- **Arquivo**: `apps/web/src/features/agenda/AgendaPage.tsx` (funcao `handleQuickPatientSubmit`)
+- **Correcao**: Verifica nome duplicado entre pacientes ativos antes de criar
 
-1. Mantenha o `Supabase` como backend central.
-2. Publique o servico `apps/whatsapp` em um servidor unico, com disco persistente para a sessao do WhatsApp.
-3. Gere o instalador com `apps/web/.env.production` apontando para o `Supabase` e para a URL publica do servico WhatsApp.
+### 3. Bug financeiro series_id null
+- **Arquivo**: `apps/web/src/lib/supabase/services.ts` (funcao `syncSupabasePaymentForSession`)
+- **Problema**: `.eq("series_id", session.seriesId ?? "")` — no Postgres, null != string vazia
+- **Correcao**: Usa `.is("series_id", null)` quando seriesId e nulo
 
-O passo a passo detalhado esta em [docs/cloud-deployment.md](/Users/alessandro/dev/ClinGestor/docs/cloud-deployment.md).
+### 4. Credenciais pre-preenchidas no login
+- **Arquivo**: `apps/web/src/features/auth/LoginPage.tsx`
+- **Correcao**: Campos iniciam vazios (antes: `psicologa@consultorio.com` / `123456`)
 
-## Publicacao na Vercel
+### 5. Upload sem sanitizacao de nome
+- **Arquivo**: `apps/web/src/lib/supabase/services.ts` (funcao `uploadReceipt`)
+- **Correcao**: Funcao `sanitizeFileName` limpa caracteres especiais e limita a 100 chars
 
-Para publicar a versao web na Vercel:
+### 6. Proxy WhatsApp vulneravel
+- **Arquivo**: `apps/web/api/whatsapp-proxy/[...path].js`
+- **Correcao**: Allowlist de paths, Bearer token obrigatorio, body limitado a 64KB, normaliza paths contra traversal
 
-1. Suba este repositorio para o GitHub.
-2. Importe o repositorio na Vercel.
-3. Em `Root Directory`, selecione `apps/web`.
-4. Configure as variaveis de ambiente do frontend na Vercel:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-   - `VITE_WHATSAPP_SERVICE_URL=/whatsapp-proxy`
-   - `WHATSAPP_SERVICE_BASE_URL=https://whatsapp.seudominio.com`
-5. Faca o deploy.
+### 7. Anamnese publica permitia reenvio
+- **Migration**: `0016_security_hardening.sql`
+- **Correcao**: `share_token` e apagado apos submissao. Bloqueada leitura/escrita quando status = `completed`
 
-O arquivo [vercel.json](/Users/alessandro/dev/ClinGestor/apps/web/vercel.json) ja configura:
-- rewrite SPA para o React Router
-- proxy interno do WhatsApp em `/whatsapp-proxy/*` sem expor a URL da infraestrutura no frontend
+### 8. Sem controle de role em RPCs
+- **Migration**: `0016_security_hardening.sql`
+- **Correcao**: `update_current_app_settings` exige role `owner`. `delete_patient` exige `owner` ou `admin`
+
+### 9. Criptografia de dados sensiveis (LGPD)
+- **Arquivo novo**: `apps/web/src/lib/utils/crypto.ts`
+- **Modificado**: `apps/web/src/lib/supabase/services.ts`
+- **Algoritmo**: AES-256-GCM via Web Crypto API
+- **Campos criptografados**: `medical_records.private_notes`, `medical_records.clinical_summary`, `patients.notes`
+- **Ativacao**: Definir `VITE_ENCRYPTION_KEY` (32+ caracteres) nas variaveis de ambiente
+- **Retrocompativel**: Dados sem prefixo `enc:` continuam legiveis
+
+### 10. WhatsApp CORS e payload
+- `apps/whatsapp/src/config.ts` — `allowFileOrigin` mudado para `false`
+- `apps/whatsapp/src/server/createServer.ts` — JSON body limitado a 64KB
+
+---
+
+## 2026-05-12 — Migracao WhatsApp: whatsapp-web.js → Baileys
+
+### Motivacao
+`whatsapp-web.js` usa Puppeteer (Chrome headless, ~500MB RAM). Nao roda em plataformas gratuitas. Baileys conecta via WebSocket direto ao WhatsApp (~50MB RAM).
+
+### Arquivos alterados
+- **Reescrito**: `apps/whatsapp/src/whatsapp/WhatsAppConnectionManager.ts` — toda logica migrada pra Baileys
+- **Novo**: `apps/whatsapp/src/whatsapp/useSupabaseAuthState.ts` — salva sessao no Supabase (tabela `whatsapp_auth_keys`) ao inves do filesystem
+- **Atualizado**: `apps/whatsapp/package.json` — removido `whatsapp-web.js`, adicionado `baileys`, `@hapi/boom`, `pino`
+- **Atualizado**: `apps/whatsapp/src/config.ts` — removidas configs Puppeteer (`headless`, `browserPath`, `authDir`)
+- **Novo**: `apps/whatsapp/Dockerfile`
+- **Nova migration**: `0017_whatsapp_auth_keys_and_keepalive.sql`
+
+### O que nao mudou
+Frontend, mensagens, scheduler, repository, server Express — tudo igual. A troca e transparente pro usuario.
+
+---
+
+## 2026-05-12 — Deploy em Producao
+
+### Vercel (frontend)
+- Variaveis de ambiente:
+  - `VITE_SUPABASE_URL` = `https://qsbtmnsibxrnecynmhdp.supabase.co`
+  - `VITE_SUPABASE_ANON_KEY` = *(chave anon)*
+  - `VITE_WHATSAPP_SERVICE_URL` = `https://clinplanner-whatsapp.onrender.com`
+  - `WHATSAPP_SERVICE_BASE_URL` = `https://clinplanner-whatsapp.onrender.com`
+
+### Render (WhatsApp bot)
+- Root Directory: `apps/whatsapp`
+- Build Command: `npm install && npm run build`
+- Start Command: `npm start`
+- Variaveis de ambiente:
+  - `SUPABASE_URL` = `https://qsbtmnsibxrnecynmhdp.supabase.co`
+  - `SUPABASE_SERVICE_ROLE_KEY` = *(chave service_role)*
+  - `WHATSAPP_ALLOWED_ORIGINS` = `https://clinplanner.vercel.app`
+
+### Supabase
+- Extensoes ativadas: `pgcrypto`, `pg_cron`, `pg_net`
+- Cron ativo: `keep-whatsapp-alive` — pinga Render a cada 10 min pra impedir spin-down
+
+```sql
+select cron.schedule('keep-whatsapp-alive', '*/10 * * * *',
+  $$select net.http_get('https://clinplanner-whatsapp.onrender.com/health')$$);
+```
+
+### Migrations executadas
+- `0016_security_hardening.sql` — RPCs hardened (anamnese, settings, delete_patient)
+- `0017_whatsapp_auth_keys_and_keepalive.sql` — Tabela `whatsapp_auth_keys` + extensoes pg_cron/pg_net
+
+---
+
+## Pendencias conhecidas
+
+- [ ] Proxy serverless Vercel (`api/whatsapp-proxy/`) nao funciona — rewrite catch-all do `vercel.json` intercepta rotas `/api/*`. Nao bloqueante: frontend conecta direto no Render via CORS
+- [ ] Ativar criptografia: configurar `VITE_ENCRYPTION_KEY` no Vercel (32+ caracteres)
+- [ ] Testar fluxo completo WhatsApp em producao: conectar QR, enviar lembrete, receber resposta
+- [ ] Considerar rate limiting nas RPCs publicas da anamnese
+
+---
+
+*Ultima atualizacao: 2026-05-12*

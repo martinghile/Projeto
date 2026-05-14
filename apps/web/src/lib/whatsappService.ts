@@ -41,6 +41,11 @@ async function request<T>(path: string, session: Session, init?: RequestInit): P
     },
   });
 
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    throw new Error("Servico do WhatsApp indisponivel. Tente novamente em alguns segundos.");
+  }
+
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { error?: string } | null;
     throw new Error(payload?.error ?? "Nao foi possivel comunicar com o servico do WhatsApp.");
