@@ -47,17 +47,21 @@ Se precisar remarcar, responda esta mensagem.`;
 }
 
 export function parseIncomingIntent(body: string): IncomingIntent {
-  const normalized = body.trim().toLowerCase();
+  const normalized = body
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
 
-  if (["1", "confirmar", "confirmado"].includes(normalized)) {
+  if (/^1$/.test(normalized) || /\b(confirmo|confirmar|confirmado|confirmada|confirma|sim|ok|pode|certo|combinado|estarei|vou)\b/.test(normalized)) {
     return "confirm";
   }
 
-  if (["2", "remarcar"].includes(normalized)) {
+  if (/^2$/.test(normalized) || /\b(remarcar|reagendar|adiar|trocar|mudar|alterar|outro dia|outro horario)\b/.test(normalized)) {
     return "reschedule";
   }
 
-  if (["3", "cancelar"].includes(normalized)) {
+  if (/^3$/.test(normalized) || /\b(cancelar|cancela|cancelado|cancelada|nao vou|nao posso|desmarcar|desmarco)\b/.test(normalized)) {
     return "cancel";
   }
 
