@@ -727,7 +727,7 @@ export function AgendaPage() {
               aria-label="Periodo anterior"
               onClick={() => movePeriod(-1)}
             >
-              &lt;&lt;
+              ‹
             </button>
             <span className="agenda-period-label agenda-navigation__period">
               {view === "week" ? formatWeekRangeLabel(referenceDate) : formatMonthLabel(referenceDate)}
@@ -739,7 +739,7 @@ export function AgendaPage() {
               aria-label="Proximo periodo"
               onClick={() => movePeriod(1)}
             >
-              &gt;&gt;
+              ›
             </button>
           </div>
         </div>
