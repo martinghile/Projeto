@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { KpiCard } from "../../components/KpiCard";
 import { SectionCard } from "../../components/SectionCard";
@@ -6,12 +6,15 @@ import { StatusBadge } from "../../components/StatusBadge";
 import {
   attachReceiptToPayment,
   createPayment,
+  effectivePaymentStatus,
   fetchFinancialOverview,
   fetchPatients,
   markPaymentAsPaid,
 } from "../../lib/supabase/services";
-import type { FinancialOverview, PatientItem, PaymentItem } from "../../lib/supabase/types";
+import type { FinancialOverview, PatientItem, PaymentItem, PaymentStatus } from "../../lib/supabase/types";
 import { formatCurrency, formatDate } from "../../lib/utils/format";
+
+type PaymentFilter = "open" | "paid" | "all";
 
 function todayDateInput() {
   const now = new Date();
@@ -23,9 +26,13 @@ function todayDateInput() {
 function buildEmptyForm(patients: PatientItem[]) {
   return {
     patientId: patients[0]?.id ?? "",
-    amount: patients[0] ? String(patients[0].sessionPrice) : "180",
+    amount: patients[0] ? String(patients[0].sessionPrice) : "",
     dueDate: todayDateInput(),
   };
+}
+
+function isOpen(status: PaymentStatus) {
+  return status === "pending" || status === "overdue";
 }
 
 export function FinancialPage() {
@@ -40,6 +47,7 @@ export function FinancialPage() {
   const [formError, setFormError] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [form, setForm] = useState(buildEmptyForm([]));
+  const [filter, setFilter] = useState<PaymentFilter>("open");
 
   async function loadFinancial() {
     setLoading(true);
@@ -70,6 +78,37 @@ export function FinancialPage() {
 
   const selectedPayment =
     overview?.recentPayments.find((payment) => payment.id === selectedPaymentId) ?? null;
+  const selectedStatus: PaymentStatus | null = selectedPayment ? effectivePaymentStatus(selectedPayment) : null;
+  const canMarkPaid =
+    Boolean(selectedPayment) && selectedStatus !== "paid" && selectedStatus !== "cancelled";
+
+  const visiblePayments = useMemo(() => {
+    if (!overview) {
+      return [] as PaymentItem[];
+    }
+
+    if (filter === "all") {
+      return overview.recentPayments;
+    }
+
+    if (filter === "paid") {
+      return overview.recentPayments.filter((payment) => payment.status === "paid");
+    }
+
+    return overview.recentPayments.filter((payment) => isOpen(effectivePaymentStatus(payment)));
+  }, [overview, filter]);
+
+  const filterCounts = useMemo(() => {
+    if (!overview) {
+      return { open: 0, paid: 0, all: 0 };
+    }
+
+    return {
+      open: overview.recentPayments.filter((payment) => isOpen(effectivePaymentStatus(payment))).length,
+      paid: overview.recentPayments.filter((payment) => payment.status === "paid").length,
+      all: overview.recentPayments.length,
+    };
+  }, [overview]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -96,7 +135,7 @@ export function FinancialPage() {
   }
 
   async function handleMarkPaid() {
-    if (!selectedPayment || selectedPayment.status === "paid") {
+    if (!selectedPayment || selectedPayment.status === "paid" || selectedPayment.status === "cancelled") {
       return;
     }
 
@@ -171,7 +210,7 @@ export function FinancialPage() {
               className="secondary-button"
               type="button"
               onClick={() => handleMarkPaid()}
-              disabled={!selectedPayment || selectedPayment.status === "paid" || submitting}
+              disabled={!canMarkPaid || submitting}
             >
               Marcar pago
             </button>
@@ -225,6 +264,7 @@ export function FinancialPage() {
                 <input
                   className="text-input"
                   type="date"
+                  required
                   value={form.dueDate}
                   onChange={(event) => setForm((current) => ({ ...current, dueDate: event.target.value }))}
                 />
@@ -255,7 +295,7 @@ export function FinancialPage() {
         {feedback ? <p className="success-text">{feedback}</p> : null}
         {error ? <p className="error-text">{error}</p> : null}
 
-        {selectedPayment ? (
+        {selectedPayment && selectedStatus ? (
           <div className="selected-session-card">
             <div className="selected-session-card__info">
               <div>
@@ -265,7 +305,7 @@ export function FinancialPage() {
                   {formatCurrency(selectedPayment.amount)} • vencimento {formatDate(selectedPayment.dueDate)}
                 </p>
               </div>
-              <StatusBadge status={selectedPayment.status} />
+              <StatusBadge status={selectedStatus} />
             </div>
 
             <div className="field-grid">
@@ -292,26 +332,67 @@ export function FinancialPage() {
           </div>
         ) : null}
 
+        <div className="payment-filter-tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={filter === "open"}
+            className={`payment-filter-tab ${filter === "open" ? "payment-filter-tab--active" : ""}`}
+            onClick={() => setFilter("open")}
+          >
+            A receber <span className="payment-filter-tab__count">{filterCounts.open}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={filter === "paid"}
+            className={`payment-filter-tab ${filter === "paid" ? "payment-filter-tab--active" : ""}`}
+            onClick={() => setFilter("paid")}
+          >
+            Pagos <span className="payment-filter-tab__count">{filterCounts.paid}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={filter === "all"}
+            className={`payment-filter-tab ${filter === "all" ? "payment-filter-tab--active" : ""}`}
+            onClick={() => setFilter("all")}
+          >
+            Todos <span className="payment-filter-tab__count">{filterCounts.all}</span>
+          </button>
+        </div>
+
         <div className="stack-list">
-          {overview.recentPayments.map((payment: PaymentItem) => (
-            <button
-              key={payment.id}
-              type="button"
-              className={`list-row list-row--selectable ${selectedPaymentId === payment.id ? "list-row--selected" : ""}`}
-              onClick={() => setSelectedPaymentId(payment.id)}
-            >
-              <div>
-                <strong>{payment.patientName}</strong>
-                <p className="muted">
-                  {formatCurrency(payment.amount)} • vencimento {formatDate(payment.dueDate)}
-                </p>
-              </div>
-              <div className="list-row__end">
-                <span className="muted">{payment.receiptPath ? "Com comprovante" : "Sem comprovante"}</span>
-                <StatusBadge status={payment.status} />
-              </div>
-            </button>
-          ))}
+          {visiblePayments.length === 0 ? (
+            <div className="page-state page-state--inline">
+              {filter === "paid" ? "Nenhum pagamento recebido ainda." : "Nada por aqui."}
+            </div>
+          ) : null}
+
+          {visiblePayments.map((payment: PaymentItem) => {
+            const status = effectivePaymentStatus(payment);
+            return (
+              <button
+                key={payment.id}
+                type="button"
+                className={`list-row list-row--selectable ${selectedPaymentId === payment.id ? "list-row--selected" : ""}`}
+                onClick={() => setSelectedPaymentId(payment.id)}
+              >
+                <div>
+                  <strong>{payment.patientName}</strong>
+                  <p className="muted">
+                    {formatCurrency(payment.amount)} • vence {formatDate(payment.dueDate)}
+                  </p>
+                </div>
+                <div className="list-row__end">
+                  <span className="muted list-row__hint">
+                    {payment.receiptPath ? "Com comprovante" : "Sem comprovante"}
+                  </span>
+                  <StatusBadge status={status} />
+                </div>
+              </button>
+            );
+          })}
         </div>
       </SectionCard>
     </div>

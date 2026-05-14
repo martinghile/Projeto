@@ -6,6 +6,7 @@ import { StatusBadge } from "../../components/StatusBadge";
 import {
   createMedicalRecord,
   deletePatient,
+  effectivePaymentStatus,
   fetchPatientDetail,
   generateAnamnesisLink,
   updatePatient,
@@ -523,7 +524,7 @@ export function PatientProfilePage() {
                     Vencimento {formatDate(payment.dueDate)} • {payment.receiptPath ? "Com comprovante" : "Sem comprovante"}
                   </p>
                 </div>
-                <StatusBadge status={payment.status} />
+                <StatusBadge status={effectivePaymentStatus(payment)} />
               </article>
             ))}
           </div>

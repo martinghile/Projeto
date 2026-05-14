@@ -39,7 +39,38 @@ import {
   normalizeZipCode,
 } from "../utils/patient";
 import { getErrorMessage } from "../utils/errors";
+import { isPastDueDate } from "../utils/format";
 import { encryptField, decryptField, encryptNullable, decryptNullable, isEncryptionEnabled } from "../utils/crypto";
+
+export function effectivePaymentStatus(payment: { status: PaymentStatus; dueDate?: string | null }): PaymentStatus {
+  if (payment.status === "pending" && isPastDueDate(payment.dueDate)) {
+    return "overdue";
+  }
+
+  return payment.status;
+}
+
+const PAYMENT_LIST_ORDER: Record<PaymentStatus, number> = {
+  overdue: 0,
+  pending: 1,
+  paid: 2,
+  cancelled: 3,
+};
+
+export function sortPaymentsForDisplay(payments: PaymentItem[]): PaymentItem[] {
+  return [...payments].sort((left, right) => {
+    const leftOrder = PAYMENT_LIST_ORDER[effectivePaymentStatus(left)] ?? 99;
+    const rightOrder = PAYMENT_LIST_ORDER[effectivePaymentStatus(right)] ?? 99;
+
+    if (leftOrder !== rightOrder) {
+      return leftOrder - rightOrder;
+    }
+
+    const leftDue = left.dueDate ?? "";
+    const rightDue = right.dueDate ?? "";
+    return leftDue.localeCompare(rightDue);
+  });
+}
 
 const DEMO_STORAGE_KEY = "psicogestao-demo-store";
 const APP_SETTINGS_KEY = "psicogestao-app-settings";
@@ -879,10 +910,10 @@ function buildFinancialOverviewFromStore(store: DemoStore): FinancialOverview {
       .filter((payment) => payment.status === "paid" && payment.paidAt && payment.paidAt >= currentMonth)
       .reduce((total, payment) => total + payment.amount, 0),
     totalPending: store.payments
-      .filter((payment) => payment.status === "pending" || payment.status === "overdue")
+      .filter((payment) => payment.status === "pending")
       .reduce((total, payment) => total + payment.amount, 0),
-    overdueCount: store.payments.filter((payment) => payment.status === "overdue").length,
-    recentPayments: sortPaymentsDescending(store.payments),
+    overdueCount: store.payments.filter((payment) => effectivePaymentStatus(payment) === "overdue").length,
+    recentPayments: sortPaymentsForDisplay(store.payments),
   };
 }
 
@@ -2786,10 +2817,10 @@ export async function fetchFinancialOverview(): Promise<FinancialOverview> {
       .filter((payment) => payment.status === "paid" && payment.paidAt && payment.paidAt >= currentMonth)
       .reduce((total, payment) => total + payment.amount, 0),
     totalPending: payments
-      .filter((payment) => payment.status === "pending" || payment.status === "overdue")
+      .filter((payment) => payment.status === "pending")
       .reduce((total, payment) => total + payment.amount, 0),
-    overdueCount: payments.filter((payment) => payment.status === "overdue").length,
-    recentPayments: payments.slice(0, 10),
+    overdueCount: payments.filter((payment) => effectivePaymentStatus(payment) === "overdue").length,
+    recentPayments: sortPaymentsForDisplay(payments).slice(0, 20),
   };
 }
 

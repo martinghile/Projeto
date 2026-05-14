@@ -168,11 +168,6 @@ textarea {
   max-width: 140px;
   height: auto;
   display: block;
-  filter: brightness(0) saturate(0) opacity(0.82);
-}
-
-:root[data-theme="dark"] .brand-logo {
-  filter: none;
 }
 
 .brand-logo--large {
@@ -533,6 +528,75 @@ textarea {
 .status-badge--draft {
   background: rgba(var(--brand-purple-rgb), 0.12);
   color: var(--muted);
+}
+
+.payment-filter-tabs {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.25rem;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+}
+
+.payment-filter-tab {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 38px;
+  padding: 0.4rem 0.75rem;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: 160ms ease;
+}
+
+.payment-filter-tab:hover {
+  color: var(--text);
+}
+
+.payment-filter-tab--active {
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.payment-filter-tab__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: var(--surface-strong);
+  color: var(--text);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.payment-filter-tab--active .payment-filter-tab__count {
+  background: var(--primary-soft-strong);
+  color: var(--brand-blue);
+}
+
+.page-state--inline {
+  padding: 1rem;
+  text-align: center;
+  color: var(--muted);
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+  background: var(--surface-soft);
+}
+
+.list-row__hint {
+  font-size: 0.82rem;
 }
 
 .toolbar {
@@ -1532,6 +1596,12 @@ textarea {
   .sidebar {
     border-right: none;
     border-bottom: 1px solid var(--outline-soft);
+    position: sticky;
+    top: 0;
+    height: auto;
+    max-height: 100vh;
+    z-index: 20;
+    background: var(--sidebar-bg);
   }
 
   .menu-grid {
@@ -1559,9 +1629,13 @@ textarea {
 }
 
 @media (max-width: 720px) {
-  .content-area,
+  .content-area {
+    padding: 0.85rem;
+    gap: 0.85rem;
+  }
+
   .sidebar {
-    padding: 1rem;
+    padding: 0.85rem;
   }
 
   .mobile-menu-toggle {
@@ -1569,6 +1643,10 @@ textarea {
     grid-column: 2;
     grid-row: 1;
     justify-self: end;
+  }
+
+  .brand-logo {
+    max-width: 120px;
   }
 
   .menu-grid,
@@ -1598,7 +1676,6 @@ textarea {
   }
 
   .menu-grid,
-  .kpi-grid,
   .split-grid,
   .details-grid,
   .field-grid,
@@ -1615,17 +1692,62 @@ textarea {
     grid-template-columns: 1fr;
   }
 
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  .kpi-card {
+    padding: 0.75rem;
+  }
+
+  .kpi-card strong {
+    font-size: clamp(1.1rem, 5vw, 1.5rem);
+  }
+
+  .header-card,
+  .section-card,
+  .login-card,
+  .day-card,
+  .detail-box {
+    padding: 0.85rem;
+  }
+
   .page-header,
   .section-card__header,
-  .list-row,
   .patient-row,
   .session-card {
     flex-direction: column;
     align-items: stretch;
   }
 
+  .list-row {
+    padding: 0.7rem 0.75rem;
+    gap: 0.6rem;
+  }
+
+  .list-row > div:first-child {
+    min-width: 0;
+  }
+
+  .list-row strong {
+    font-size: 0.95rem;
+  }
+
+  .list-row .muted {
+    font-size: 0.82rem;
+  }
+
+  .list-row__hint {
+    display: none;
+  }
+
+  .list-row__end {
+    justify-content: flex-end;
+    flex-shrink: 0;
+  }
+
   .button-row,
-  .list-row__end,
   .patient-row__meta,
   .session-actions,
   .agenda-topbar,
@@ -1638,12 +1760,53 @@ textarea {
     width: 100%;
   }
 
+  .selected-session-card {
+    padding: 0.85rem;
+  }
+
+  .selected-session-card__info {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+
+  .status-badge,
+  .pill {
+    min-height: 28px;
+    padding: 0.25rem 0.65rem;
+    font-size: 0.78rem;
+  }
+
   .primary-button,
   .secondary-button,
-  .tab-button,
+  .tab-button {
+    min-height: 44px;
+    justify-content: center;
+    text-align: center;
+    flex: 1 1 auto;
+  }
+
   .menu-link {
     justify-content: center;
     text-align: center;
+  }
+
+  .button-row {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .payment-filter-tab {
+    min-height: 40px;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.82rem;
+  }
+
+  .payment-filter-tab__count {
+    min-width: 20px;
+    height: 20px;
+    padding: 0 0.4rem;
+    font-size: 0.7rem;
   }
 
   .agenda-view-tabs {
@@ -1694,5 +1857,23 @@ textarea {
   .report-finance-chart,
   .report-line-chart__labels {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-filter-tab {
+    font-size: 0.78rem;
+  }
+
+  .brand-logo {
+    max-width: 100px;
+  }
+
+  .brand-logo--large {
+    max-width: 260px;
   }
 }
