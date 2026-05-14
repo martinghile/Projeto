@@ -5,7 +5,8 @@ import { ThemeToggle } from "../components/ThemeToggle";
 import { applyTheme, getPreferredTheme, type ThemeMode } from "../lib/utils/theme";
 import { useAuth } from "../features/auth/useAuth";
 import { useAppSettings } from "../features/settings/useAppSettings";
-import logoSrc from "../assets/ClinPlanner.png";
+import logoDarkSrc from "../assets/ClinPlanner.png";
+import logoLightSrc from "../assets/logo-light.png";
 
 interface AppShellProps {
   children: ReactNode;
@@ -42,6 +43,7 @@ export function AppShell({ children }: AppShellProps) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const logoSrc = theme === "dark" ? logoDarkSrc : logoLightSrc;
   const displayName = settings?.fullName ?? user?.user_metadata?.full_name ?? user?.email ?? "Psicologa";
   const initials = displayName
     .split(" ")

@@ -6,6 +6,7 @@ import { isSupabaseConfigured } from "../../lib/supabase/client";
 import { applyTheme, getPreferredTheme, type ThemeMode } from "../../lib/utils/theme";
 import { useAuth } from "./useAuth";
 import logoDarkSrc from "../../assets/ClinPlanner.png";
+import logoLightSrc from "../../assets/logo-light.png";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ export function LoginPage() {
     applyTheme(theme);
   }, [theme]);
 
-  const logoSrc = logoDarkSrc;
+  const logoSrc = theme === "dark" ? logoDarkSrc : logoLightSrc;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
