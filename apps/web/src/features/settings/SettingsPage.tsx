@@ -57,7 +57,7 @@ export function SettingsPage() {
   const [whatsAppBusy, setWhatsAppBusy] = useState<"connect" | "disconnect" | "refresh" | "">("");
   const [whatsAppError, setWhatsAppError] = useState("");
   const [whatsAppFeedback, setWhatsAppFeedback] = useState("");
-  const planFieldRef = useRef<HTMLSelectElement | null>(null);
+  const planFieldRef = useRef<HTMLDivElement | null>(null);
   const timezoneFieldRef = useRef<HTMLSelectElement | null>(null);
   const whatsAppAvailable = !isDemo && Boolean(session) && isWhatsAppServiceConfigured();
 
@@ -188,7 +188,7 @@ export function SettingsPage() {
     }
   }
 
-  function focusField(field: HTMLSelectElement | null, message: string) {
+  function focusField(field: HTMLElement | null, message: string) {
     field?.focus();
     field?.scrollIntoView({ behavior: "smooth", block: "center" });
     setShortcutFeedback(message);
@@ -426,18 +426,10 @@ export function SettingsPage() {
 
             <label>
               Plano
-              <select
-                ref={planFieldRef}
-                className="text-input"
-                value={form.plan}
-                onChange={(event) => setForm((current) => ({ ...current, plan: event.target.value }))}
-              >
-                {planOptions.map((plan) => (
-                  <option key={plan.value} value={plan.value}>
-                    {plan.label}
-                  </option>
-                ))}
-              </select>
+              <div className="text-input text-input--disabled" ref={planFieldRef}>
+                {planOptions.find((option) => option.value === form.plan)?.label ?? "Essencial"}
+                <span className="pill pill--muted">Em breve</span>
+              </div>
             </label>
 
             <label>
@@ -471,16 +463,11 @@ export function SettingsPage() {
 
       <SectionCard title="Resumo técnico" subtitle="Clique nos blocos para abrir o detalhe de cada item.">
         <div className="settings-grid">
-          <button
-            className={`detail-box detail-box--button ${activeShortcut === "plan" ? "detail-box--active" : ""}`}
-            type="button"
-            aria-pressed={activeShortcut === "plan"}
-            onClick={() => void runShortcut("plan")}
-          >
+          <div className="detail-box detail-box--disabled">
             <span className="eyebrow">Plano</span>
             <strong>{planOptions.find((option) => option.value === form.plan)?.label ?? form.plan}</strong>
-            <p className="muted">Clique para editar o plano desta instancia.</p>
-          </button>
+            <p className="muted">Gestao de planos em breve.</p>
+          </div>
 
           <button
             className={`detail-box detail-box--button ${activeShortcut === "auth" ? "detail-box--active" : ""}`}
