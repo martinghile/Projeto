@@ -101,46 +101,6 @@ function buildDayFlow(summary: DashboardSummary) {
   }));
 }
 
-function buildSparklineSeries(summary: DashboardSummary) {
-  const derived = summary.pendingInvoices.map((invoice) => invoice.amount);
-
-  if (derived.length >= 4) {
-    return derived.slice(0, 6);
-  }
-
-  const normalizedRevenue = summary.monthlyRevenue > 0 ? summary.monthlyRevenue / Math.max(summary.sessionsToday || 1, 1) : 180;
-
-  return [
-    summary.sessionsToday * 28 + 60,
-    normalizedRevenue,
-    summary.pendingPayments * 42 + 30,
-    summary.activePatients * 16 + 40,
-    summary.monthlyRevenue > 0 ? summary.monthlyRevenue / 8 : 210,
-    summary.pendingPayments * 34 + 70,
-  ];
-}
-
-function buildSparkPath(values: number[], width = 320, height = 148, padding = 14) {
-  const max = Math.max(...values, 1);
-  const min = Math.min(...values, 0);
-  const safeRange = Math.max(max - min, 1);
-  const step = (width - padding * 2) / Math.max(values.length - 1, 1);
-
-  return values
-    .map((value, index) => {
-      const x = padding + index * step;
-      const y = height - padding - ((value - min) / safeRange) * (height - padding * 2);
-      return `${index === 0 ? "M" : "L"} ${x} ${y}`;
-    })
-    .join(" ");
-}
-
-function buildSparkArea(values: number[], width = 320, height = 148, padding = 14) {
-  const line = buildSparkPath(values, width, height, padding);
-
-  return `${line} L ${width - padding} ${height - padding} L ${padding} ${height - padding} Z`;
-}
-
 function DashboardOrbitCard({
   label,
   value,
@@ -212,9 +172,6 @@ export function DashboardPage() {
   const orbitMetrics = buildOrbitMetrics(summary);
   const financialBars = buildFinancialBars(summary);
   const dayFlow = buildDayFlow(summary);
-  const sparkValues = buildSparklineSeries(summary);
-  const sparkPath = buildSparkPath(sparkValues);
-  const sparkArea = buildSparkArea(sparkValues);
   const dayLoadPercent = clampPercent((summary.sessionsToday / Math.max(summary.activePatients || 1, 1)) * 100);
   const revenueScale = clampPercent(
     (summary.monthlyRevenue / Math.max(summary.monthlyRevenue + summary.pendingPayments * 180, 1)) * 100,
@@ -222,60 +179,6 @@ export function DashboardPage() {
 
   return (
     <div className="page-grid dashboard-page">
-      <section className="dashboard-hero">
-        <div className="dashboard-hero__copy">
-          <p className="eyebrow">Painel central do consultório</p>
-          <h3>Visão direta do que precisa de atenção hoje.</h3>
-          <p className="muted">
-            Abertura com agenda, fluxo financeiro e ritmo do dia para reduzir cliques e dar leitura rápida.
-          </p>
-
-          <div className="dashboard-highlight-grid">
-            <article className="dashboard-highlight">
-              <span className="dashboard-highlight__label">Faturamento recebido</span>
-              <strong>{formatCurrency(summary.monthlyRevenue)}</strong>
-              <p className="muted">Total confirmado no mês atual.</p>
-            </article>
-            <article className="dashboard-highlight">
-              <span className="dashboard-highlight__label">Carga do dia</span>
-              <strong>{dayLoadPercent}%</strong>
-              <p className="muted">Relação entre pacientes ativos e atendimentos previstos.</p>
-            </article>
-            <article className="dashboard-highlight">
-              <span className="dashboard-highlight__label">Pressao financeira</span>
-              <strong>{summary.pendingPayments}</strong>
-              <p className="muted">Pagamentos pendentes aguardando baixa.</p>
-            </article>
-          </div>
-        </div>
-
-        <div className="dashboard-spark-card">
-          <div className="dashboard-spark-card__header">
-            <div>
-              <p className="eyebrow">Pulso do período</p>
-              <strong>{revenueScale}%</strong>
-            </div>
-            <span className="pill pill--muted">Resumo visual</span>
-          </div>
-
-          <svg className="dashboard-spark" viewBox="0 0 320 148" preserveAspectRatio="none" aria-hidden="true">
-            <path className="dashboard-spark__area" d={sparkArea} />
-            <path className="dashboard-spark__line" d={sparkPath} />
-          </svg>
-
-          <div className="dashboard-spark-card__footer">
-            <div>
-              <span className="muted small">Recebido no mês</span>
-              <strong>{formatCompactCurrency(summary.monthlyRevenue)}</strong>
-            </div>
-            <div>
-              <span className="muted small">Pendências abertas</span>
-              <strong>{summary.pendingPayments}</strong>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section className="kpi-grid">
         <KpiCard
           label="Sessões do dia"
@@ -355,7 +258,7 @@ export function DashboardPage() {
           className="section-card--glow"
         >
           <div className="stack-list">
-            {summary.todaySessions.length === 0 ? <div className="page-state">Nenhuma sessão prevista para hoje."</div> : null}
+            {summary.todaySessions.length === 0 ? <div className="page-state">Nenhuma sessão prevista para hoje.</div> : null}
             {summary.todaySessions.map((session) => (
               <article key={session.id} className="list-row">
                 <div>

@@ -12,16 +12,16 @@ interface AppShellProps {
 }
 
 const menuItems = [
-  { to: "/", label: "Dashboard", short: "DB" },
-  { to: "/agenda", label: "Agenda", short: "AG" },
-  { to: "/pacientes", label: "Pacientes", short: "PC" },
-  { to: "/financeiro", label: "Financeiro", short: "FN" },
-  { to: "/relatorios", label: "Relatorios", short: "RL" },
-  { to: "/configuracoes", label: "Configuracoes", short: "CF" },
+  { to: "/", label: "Dashboard" },
+  { to: "/agenda", label: "Agenda" },
+  { to: "/pacientes", label: "Pacientes" },
+  { to: "/financeiro", label: "Financeiro" },
+  { to: "/relatorios", label: "Relatorios" },
+  { to: "/configuracoes", label: "Configuracoes" },
 ];
 
 export function AppShell({ children }: AppShellProps) {
-  const { user, isDemo, demoExpiresAt, signOutUser } = useAuth();
+  const { user, isDemo, signOutUser } = useAuth();
   const { settings } = useAppSettings();
   const [theme, setTheme] = useState<ThemeMode>(() => getPreferredTheme());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -53,24 +53,8 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand-card brand-card--hero">
+        <div className="sidebar-brand">
           <img className="brand-logo" src={logoSrc} alt="ClinPlanner" />
-          <div className="brand-card__copy">
-            <p className="eyebrow">ClinPlanner</p>
-            <strong>{settings?.clinicName ?? "Consultorio"}</strong>
-            <p className="muted">Gestao clinica simples, visual e pronta para o dia a dia.</p>
-          </div>
-
-          <div className="sidebar-user">
-            <span className="sidebar-user__avatar">{initials || "CP"}</span>
-            <div>
-              <strong>{displayName}</strong>
-              <p className="muted small">{isDemo ? "Sessao demonstracao" : "Ambiente conectado"}</p>
-              {isDemo && demoExpiresAt ? (
-                <p className="muted small">Expira em {new Date(demoExpiresAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</p>
-              ) : null}
-            </div>
-          </div>
 
           <button
             className={`mobile-menu-toggle ${isMobileMenuOpen ? "mobile-menu-toggle--active" : ""}`}
@@ -93,13 +77,17 @@ export function AppShell({ children }: AppShellProps) {
               className={({ isActive }) => `menu-link ${isActive ? "menu-link--active" : ""}`}
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              <span className="menu-link__icon">{item.short}</span>
-              <span>{item.label}</span>
+              {item.label}
             </NavLink>
           ))}
         </nav>
 
         <div className="sidebar-footer">
+          <div className="sidebar-user-inline">
+            <span className="sidebar-user-inline__avatar">{initials || "CP"}</span>
+            <span className="sidebar-user-inline__name">{displayName}</span>
+          </div>
+
           <ThemeToggle value={theme} onChange={setTheme} />
 
           <button
@@ -117,29 +105,16 @@ export function AppShell({ children }: AppShellProps) {
 
       <main className="content-area">
         <header className="page-header">
-          <div className="page-header__copy">
-            <p className="eyebrow">Bem-vinda</p>
-            <h2>{displayName}</h2>
-            <p className="muted">
-              Hoje:{" "}
+          <p className="page-header__greeting">
+            {displayName}{" "}
+            <span className="muted">
+              &middot;{" "}
               {new Intl.DateTimeFormat("pt-BR", {
                 dateStyle: "full",
               }).format(new Date())}
-            </p>
-          </div>
-
-          <div className="header-actions">
-            <div className="header-card header-card--status">
-              <span className={`pill ${isDemo ? "pill--warning" : "pill--success"}`}>
-                {isDemo ? "Modo demonstracao" : "Supabase conectado"}
-              </span>
-              <p className="muted small">
-                {isDemo
-                  ? "Voce esta em uma sessao local de apresentacao com dados ficticios. Tudo que for criado aqui expira automaticamente."
-                  : "Auth, banco e storage estao prontos para uso com o projeto do Supabase."}
-              </p>
-            </div>
-          </div>
+            </span>
+          </p>
+          {isDemo && <span className="pill pill--warning">Modo demonstracao</span>}
         </header>
 
         {children}
