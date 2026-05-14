@@ -164,7 +164,7 @@ textarea {
   max-width: 140px;
   height: auto;
   display: block;
-  filter: brightness(0.35) contrast(1.1) saturate(1.4);
+  filter: brightness(0) saturate(0) opacity(0.82);
 }
 
 :root[data-theme="dark"] .brand-logo {
