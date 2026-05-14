@@ -244,10 +244,11 @@ textarea {
 .primary-button,
 .secondary-button,
 .tab-button {
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid transparent;
-  padding: 0.95rem 1rem;
-  min-height: 52px;
+  padding: 0.5rem 1rem;
+  min-height: 36px;
+  font-size: 0.85rem;
   transition: 160ms ease;
 }
 
@@ -293,18 +294,18 @@ textarea {
 .secondary-button,
 .tab-button {
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .primary-button {
   background: var(--brand-blue);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(var(--brand-blue-rgb), 0.16);
+  font-weight: 500;
+  box-shadow: none;
 }
 
 .primary-button:hover {
-  filter: brightness(1.04);
-  transform: translateY(-1px);
+  filter: brightness(1.06);
 }
 
 .secondary-button,
@@ -342,8 +343,9 @@ textarea {
 }
 
 .tab-button--active {
-  background: var(--accent-gradient-soft);
-  border-color: var(--primary-soft-strong);
+  background: var(--text);
+  border-color: var(--text);
+  color: #ffffff;
 }
 
 .content-area {
@@ -632,24 +634,24 @@ textarea {
 .agenda-navigation {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.35rem;
   flex-wrap: wrap;
 }
 
 .agenda-view-tab {
-  min-width: 116px;
-  padding-inline: 1rem;
+  min-width: 90px;
+  padding-inline: 0.85rem;
 }
 
 .agenda-navigation {
-  gap: 0.55rem;
+  gap: 0.35rem;
 }
 
 .agenda-navigation__button {
-  min-width: 58px;
-  padding-inline: 0.65rem;
+  min-width: 36px;
+  padding: 0.4rem 0.6rem;
   justify-content: center;
-  letter-spacing: 0.08em;
+  font-size: 0.8rem;
   flex: 0 0 auto;
 }
 
@@ -657,14 +659,15 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 52px;
-  min-width: 176px;
-  padding: 0 0.9rem;
-  border-radius: 10px;
-  background: var(--surface-soft);
-  border: 1px solid var(--surface-strong);
-  font-weight: 700;
+  min-height: 36px;
+  padding: 0 0.75rem;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  font-weight: 500;
+  font-size: 0.85rem;
   text-align: center;
+  color: var(--text);
 }
 
 .agenda-navigation__period {
@@ -1641,24 +1644,24 @@ textarea {
 
   .agenda-navigation {
     display: grid;
-    grid-template-columns: 58px minmax(0, 1fr) 58px;
-    gap: 0.5rem;
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+    gap: 0.35rem;
     align-items: stretch;
   }
 
   .agenda-navigation__button {
-    width: 58px;
-    min-width: 58px;
+    width: 40px;
+    min-width: 40px;
   }
 
   .agenda-navigation__period {
     min-width: 0;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
   }
 
   .report-toolbar {
     display: grid;
-    grid-template-columns: 58px minmax(0, 1fr) 58px;
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
   }
 
   .report-toolbar .secondary-button:not(.agenda-navigation__button),

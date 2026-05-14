@@ -125,7 +125,7 @@ export function ReportsPage() {
               aria-label="Mes anterior"
               onClick={() => setReferenceMonth((current) => addMonths(current, -1))}
             >
-              &lt;&lt;
+              ‹
             </button>
             <span className="agenda-period-label report-toolbar__period">{monthLabel(referenceMonth)}</span>
             <button
@@ -134,7 +134,7 @@ export function ReportsPage() {
               aria-label="Proximo mes"
               onClick={() => setReferenceMonth((current) => addMonths(current, 1))}
             >
-              &gt;&gt;
+              ›
             </button>
             <button
               className="secondary-button"
