@@ -88,18 +88,19 @@ export function AppShell({ children }: AppShellProps) {
             <span className="sidebar-user-inline__name">{displayName}</span>
           </div>
 
-          <ThemeToggle value={theme} onChange={setTheme} />
-
-          <button
-            className="secondary-button secondary-button--wide"
-            type="button"
-            onClick={() => {
-              setIsMobileMenuOpen(false);
-              signOutUser();
-            }}
-          >
-            {isDemo ? "Sair do modo demo" : "Sair"}
-          </button>
+          <div className="sidebar-footer__row">
+            <ThemeToggle value={theme} onChange={setTheme} />
+            <button
+              className="sidebar-logout"
+              type="button"
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                signOutUser();
+              }}
+            >
+              {isDemo ? "Sair demo" : "Sair"}
+            </button>
+          </div>
         </div>
       </aside>
 
