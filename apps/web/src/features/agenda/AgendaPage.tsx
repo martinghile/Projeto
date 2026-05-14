@@ -198,15 +198,16 @@ function createDefaultDateRange(referenceDate?: Date) {
 
 function buildEmptyForm(patients: PatientItem[], referenceDate: Date) {
   const range = createDefaultDateRange(referenceDate);
+  const defaultPatient = patients.find((patient) => patient.isActive) ?? patients[0];
 
   return {
-    patientId: patients[0]?.id ?? "",
+    patientId: defaultPatient?.id ?? "",
     date: range.date,
     startTime: range.startTime,
     endTime: range.endTime,
-    sessionPrice: patients[0] ? String(patients[0].sessionPrice) : "180",
+    sessionPrice: defaultPatient ? String(defaultPatient.sessionPrice) : "180",
     billingMode: "per_session" as const,
-    monthlyAmount: patients[0] ? String(patients[0].sessionPrice) : "180",
+    monthlyAmount: defaultPatient ? String(defaultPatient.sessionPrice) : "180",
     location: "",
     scheduleMode: "single" as const,
   };
@@ -332,19 +333,18 @@ export function AgendaPage() {
         fetchSessionsInRange(visibleRange.start.toISOString(), visibleRange.end.toISOString()),
         fetchPatients(),
       ]);
-      const loadedActivePatients = loadedPatients.filter((patient) => patient.isActive);
 
       setSessions(loadedSessions);
       setPatients(loadedPatients);
       setSelectedSessionId((current) => (loadedSessions.some((session) => session.id === current) ? current : ""));
       setForm((current) => {
-        const hasCurrentPatient = loadedActivePatients.some((patient) => patient.id === current.patientId);
+        const hasCurrentPatient = loadedPatients.some((patient) => patient.id === current.patientId);
 
         if (hasCurrentPatient) {
           return current;
         }
 
-        return buildEmptyForm(loadedActivePatients, currentDate);
+        return buildEmptyForm(loadedPatients, currentDate);
       });
     } catch (exception) {
       const message = exception instanceof Error ? exception.message : "Nao foi possivel carregar a agenda.";
@@ -368,11 +368,10 @@ export function AgendaPage() {
     });
   }, [showForm]);
 
-  function resetForm(nextDate = referenceDate) {
-    const activePatients = patients.filter((patient) => patient.isActive);
+  function resetForm(nextDate = referenceDate, nextPatients = patients) {
     setEditingSession(null);
     setPendingConflict(null);
-    setForm(buildEmptyForm(activePatients, nextDate));
+    setForm(buildEmptyForm(nextPatients, nextDate));
     setFormError("");
   }
 
@@ -389,7 +388,7 @@ export function AgendaPage() {
     setShowQuickPatientForm(true);
   }
 
-  function handleCreateButtonClick() {
+  async function handleCreateButtonClick() {
     const shouldClose = showForm && !editingSession;
 
     if (shouldClose) {
@@ -399,10 +398,20 @@ export function AgendaPage() {
       return;
     }
 
-    resetForm(referenceDate);
+    let latestPatients = patients;
+
+    try {
+      latestPatients = await fetchPatients();
+      setPatients(latestPatients);
+    } catch (exception) {
+      const message = exception instanceof Error ? exception.message : "Nao foi possivel atualizar os pacientes.";
+      setError(message);
+    }
+
+    resetForm(referenceDate, latestPatients);
     setShowForm(true);
 
-    if (activePatients.length === 0) {
+    if (latestPatients.length === 0) {
       openQuickPatientForm();
     }
   }
@@ -415,9 +424,14 @@ export function AgendaPage() {
   const selectedSession = sessions.find((session) => session.id === selectedSessionId) ?? null;
   const selectedSessionDisplayStatus = selectedSession ? getSessionDisplayStatus(selectedSession) : null;
   const activePatients = patients.filter((patient) => patient.isActive);
-  const selectablePatients = editingSession
-    ? patients.filter((patient) => patient.isActive || patient.id === editingSession.patientId)
-    : activePatients;
+  const selectablePatients = [...patients].sort((left, right) => {
+    if (left.isActive !== right.isActive) {
+      return left.isActive ? -1 : 1;
+    }
+
+    return left.fullName.localeCompare(right.fullName);
+  });
+  const selectedPatient = selectablePatients.find((patient) => patient.id === form.patientId) ?? null;
   const conflictPreview = pendingConflict?.conflicts.slice(0, 5) ?? [];
 
   const weekDays = buildWeekDays(referenceDate);
@@ -442,7 +456,7 @@ export function AgendaPage() {
 
     try {
       if (!form.patientId) {
-        throw new Error("Selecione um paciente ativo.");
+        throw new Error("Selecione um paciente cadastrado.");
       }
 
       if (form.endTime <= form.startTime) {
@@ -695,7 +709,7 @@ export function AgendaPage() {
           <button
             className="primary-button"
             type="button"
-            onClick={handleCreateButtonClick}
+            onClick={() => void handleCreateButtonClick()}
           >
             {showForm && !editingSession ? "Fechar formulario" : "Nova sessao"}
           </button>
@@ -744,9 +758,9 @@ export function AgendaPage() {
           </div>
         </div>
 
-        {activePatients.length === 0 && !loading ? (
+        {patients.length === 0 && !loading ? (
           <div className="page-state">
-            <p>Mantenha pelo menos um paciente ativo antes de criar uma sessao.</p>
+            <p>Nenhum paciente cadastrado ainda.</p>
             <p>Clique em Nova sessao para abrir o cadastro rapido do primeiro paciente.</p>
           </div>
         ) : null}
@@ -774,6 +788,7 @@ export function AgendaPage() {
                     {selectablePatients.map((patient) => (
                       <option key={patient.id} value={patient.id}>
                         {patient.fullName}
+                        {!patient.isActive ? " (inativo)" : ""}
                       </option>
                     ))}
                   </select>
@@ -781,6 +796,12 @@ export function AgendaPage() {
                     Cadastro rapido
                   </button>
                 </div>
+                {selectedPatient && !selectedPatient.isActive ? (
+                  <span className="muted small">
+                    Este paciente esta inativo, mas ainda pode ser selecionado aqui. Se preferir, reative-o em
+                    Pacientes.
+                  </span>
+                ) : null}
               </label>
 
               <label>
