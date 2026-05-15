@@ -23,9 +23,9 @@ import type {
   SessionItem,
   SessionScheduleMode,
 } from "../../lib/supabase/types";
-import { formatTimeRange, statusLabel } from "../../lib/utils/format";
+import { formatTime, formatTimeRange, statusLabel } from "../../lib/utils/format";
 
-type CalendarView = "week" | "month";
+type CalendarView = "day" | "month";
 
 interface SessionFormState {
   patientId: string;
@@ -252,7 +252,7 @@ function buildRecurringOccurrences(form: SessionFormState, rangeEnd: Date): Crea
 }
 
 function getVisibleRange(view: CalendarView, referenceDate: Date) {
-  if (view === "week") {
+  if (view === "day") {
     return {
       start: startOfDay(startOfWeek(referenceDate)),
       end: endOfDay(endOfWeek(referenceDate)),
@@ -263,6 +263,19 @@ function getVisibleRange(view: CalendarView, referenceDate: Date) {
     start: startOfDay(startOfWeek(startOfMonth(referenceDate))),
     end: endOfDay(endOfWeek(endOfMonth(referenceDate))),
   };
+}
+
+function formatDayPickerLabel(value: Date) {
+  return new Intl.DateTimeFormat("pt-BR", { weekday: "short" }).format(value).replace(".", "");
+}
+
+function formatSelectedDayLabel(value: Date) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(value);
 }
 
 function buildWeekDays(referenceDate: Date) {
@@ -299,8 +312,9 @@ function agendaBounds() {
 export function AgendaPage() {
   const formRef = useRef<HTMLFormElement | null>(null);
   const bounds = agendaBounds();
-  const [view, setView] = useState<CalendarView>("week");
+  const [view, setView] = useState<CalendarView>("day");
   const [referenceDate, setReferenceDate] = useState<Date>(new Date());
+  const [selectedDay, setSelectedDay] = useState<Date>(new Date());
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [patients, setPatients] = useState<PatientItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -425,13 +439,27 @@ export function AgendaPage() {
   const currentWeekStart = startOfWeek(referenceDate);
   const currentMonthStart = startOfMonth(referenceDate);
   const previousAllowed =
-    view === "week"
+    view === "day"
       ? addDays(currentWeekStart, -7) >= bounds.minWeek
       : addMonths(currentMonthStart, -1) >= bounds.minMonth;
   const nextAllowed =
-    view === "week"
+    view === "day"
       ? addDays(currentWeekStart, 7) <= bounds.maxWeek
       : addMonths(currentMonthStart, 1) <= bounds.maxMonth;
+
+  const selectedDayKey = toLocalDateKey(selectedDay);
+  const selectedDaySessions = (sessionsByDay[selectedDayKey] ?? []).sort(
+    (a, b) => a.startsAt.localeCompare(b.startsAt),
+  );
+  const isSelectedDayToday = sameDay(selectedDay, new Date());
+
+  const weekActiveSessions = sessions.filter((s) => s.status !== "cancelled");
+  const weekConfirmed = sessions.filter(
+    (s) => s.confirmationStatus === "confirmed" || s.status === "completed",
+  ).length;
+  const weekPendingConfirmation = sessions.filter(
+    (s) => s.status === "scheduled" && s.confirmationStatus !== "confirmed",
+  ).length;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -570,9 +598,19 @@ export function AgendaPage() {
   }
 
   function movePeriod(direction: -1 | 1) {
-    setReferenceDate((current) =>
-      view === "week" ? addDays(startOfWeek(current), direction * 7) : addMonths(startOfMonth(current), direction),
-    );
+    if (view === "day") {
+      const newWeekStart = addDays(startOfWeek(referenceDate), direction * 7);
+      setReferenceDate(newWeekStart);
+      setSelectedDay(newWeekStart);
+    } else {
+      setReferenceDate((current) => addMonths(startOfMonth(current), direction));
+    }
+  }
+
+  function goToToday() {
+    const today = new Date();
+    setReferenceDate(today);
+    setSelectedDay(today);
   }
 
   async function handleConflictResolution(deactivateConflictingPatients: boolean) {
@@ -686,27 +724,12 @@ export function AgendaPage() {
     <div className="page-grid">
       <SectionCard
         title="Agenda"
-        subtitle={
-          view === "week"
-            ? `Semana exibida: ${formatWeekRangeLabel(referenceDate)}`
-            : `Mes exibido: ${formatMonthLabel(referenceDate)}`
-        }
         action={
-          <button
-            className="primary-button"
-            type="button"
-            onClick={handleCreateButtonClick}
-          >
-            {showForm && !editingSession ? "Fechar formulario" : "Nova sessao"}
-          </button>
-        }
-      >
-        <div className="agenda-topbar">
-          <div className="agenda-view-tabs">
+          <div className="agenda-header-actions">
             <button
-              className={`tab-button agenda-view-tab ${view === "week" ? "tab-button--active" : ""}`}
+              className={`tab-button agenda-view-tab ${view === "day" ? "tab-button--active" : ""}`}
               type="button"
-              onClick={() => setView("week")}
+              onClick={() => setView("day")}
             >
               Semanal
             </button>
@@ -717,32 +740,89 @@ export function AgendaPage() {
             >
               Mensal
             </button>
-          </div>
-
-          <div className="agenda-navigation">
             <button
-              className="secondary-button agenda-navigation__button"
+              className="primary-button"
+              type="button"
+              onClick={handleCreateButtonClick}
+            >
+              {showForm && !editingSession ? "Fechar" : "Nova sessao"}
+            </button>
+          </div>
+        }
+      >
+        {view === "day" ? (
+          <div className="day-picker">
+            <button
+              className="day-picker__nav"
               type="button"
               disabled={!previousAllowed}
-              aria-label="Periodo anterior"
+              aria-label="Semana anterior"
               onClick={() => movePeriod(-1)}
             >
               ‹
             </button>
-            <span className="agenda-period-label agenda-navigation__period">
-              {view === "week" ? formatWeekRangeLabel(referenceDate) : formatMonthLabel(referenceDate)}
-            </span>
+            <div className="day-picker__days">
+              {weekDays.map((day) => {
+                const dayKey = toLocalDateKey(day);
+                const count = (sessionsByDay[dayKey] ?? []).length;
+                const isSelected = sameDay(day, selectedDay);
+                const isToday = sameDay(day, new Date());
+
+                return (
+                  <button
+                    key={dayKey}
+                    type="button"
+                    className={`day-picker__day ${isSelected ? "day-picker__day--selected" : ""} ${isToday ? "day-picker__day--today" : ""}`}
+                    onClick={() => setSelectedDay(day)}
+                  >
+                    <span className="day-picker__weekday">{formatDayPickerLabel(day)}</span>
+                    <span className="day-picker__number">{day.getDate()}</span>
+                    {count > 0 ? <span className="day-picker__dot" /> : null}
+                  </button>
+                );
+              })}
+            </div>
             <button
-              className="secondary-button agenda-navigation__button"
+              className="day-picker__nav"
               type="button"
               disabled={!nextAllowed}
-              aria-label="Proximo periodo"
+              aria-label="Proxima semana"
               onClick={() => movePeriod(1)}
             >
               ›
             </button>
           </div>
-        </div>
+        ) : (
+          <div className="agenda-navigation">
+            <button
+              className="secondary-button agenda-navigation__button"
+              type="button"
+              disabled={!previousAllowed}
+              aria-label="Mes anterior"
+              onClick={() => movePeriod(-1)}
+            >
+              ‹
+            </button>
+            <span className="agenda-period-label agenda-navigation__period">
+              {formatMonthLabel(referenceDate)}
+            </span>
+            <button
+              className="secondary-button agenda-navigation__button"
+              type="button"
+              disabled={!nextAllowed}
+              aria-label="Proximo mes"
+              onClick={() => movePeriod(1)}
+            >
+              ›
+            </button>
+          </div>
+        )}
+
+        {!isSelectedDayToday && view === "day" ? (
+          <button className="agenda-today-link" type="button" onClick={goToToday}>
+            Ir para hoje
+          </button>
+        ) : null}
 
         {activePatients.length === 0 && !loading ? (
           <div className="page-state">
@@ -1096,104 +1176,98 @@ export function AgendaPage() {
         {loading ? <div className="page-state">Carregando agenda...</div> : null}
         {!loading && error ? <div className="page-state">{error}</div> : null}
 
-        {!loading && !error && selectedSession ? (
-          <div className="selected-session-card">
-            <div className="selected-session-card__info">
-              <div>
-                <p className="eyebrow">Sessao selecionada</p>
-                <strong>{selectedSession.patientName}</strong>
-                <p className="muted">
-                  {formatWeekdayLabel(new Date(selectedSession.startsAt))} • {formatTimeRange(selectedSession.startsAt, selectedSession.endsAt)}
-                </p>
-                <p className="muted">{selectedSession.location ?? "Sem local definido"}</p>
-              </div>
-              <div className="selected-session-card__meta">
-                {selectedSessionDisplayStatus ? (
-                  <span
-                    className={`status-badge status-badge--${selectedSessionDisplayStatus}`}
-                    title={
-                      selectedSessionDisplayStatus === "scheduled"
-                        ? "Sessao aguardando confirmacao do paciente."
-                        : undefined
-                    }
+        {!loading && !error && view === "day" ? (
+          <>
+            <div className="day-timeline">
+              <h3 className="day-timeline__title">{formatSelectedDayLabel(selectedDay)}</h3>
+
+              {selectedDaySessions.length === 0 ? (
+                <div className="day-timeline__empty">
+                  <p className="muted">Nenhuma sessao neste dia.</p>
+                </div>
+              ) : null}
+
+              {selectedDaySessions.map((session) => {
+                const displayStatus = getSessionDisplayStatus(session);
+                const colorVariant = displayStatus === "scheduled" ? "awaiting-confirmation" : displayStatus;
+                const isExpanded = selectedSessionId === session.id;
+
+                return (
+                  <article
+                    key={session.id}
+                    className={`timeline-item timeline-item--${colorVariant} ${isExpanded ? "timeline-item--expanded" : ""}`}
                   >
-                    {selectedSessionDisplayStatus === "scheduled"
-                      ? "Aguardando confirmacao"
-                      : statusLabel(selectedSessionDisplayStatus)}
-                  </span>
-                ) : null}
-                <button
-                  className="close-button"
-                  type="button"
-                  aria-label="Fechar sessao selecionada"
-                  onClick={() => setSelectedSessionId("")}
-                >
-                  x
-                </button>
+                    <button
+                      className="timeline-item__row"
+                      type="button"
+                      onClick={() => setSelectedSessionId(isExpanded ? "" : session.id)}
+                    >
+                      <div className="timeline-item__time">
+                        <span>{formatTime(session.startsAt)}</span>
+                        <span className="muted">{formatTime(session.endsAt)}</span>
+                      </div>
+                      <div className="timeline-item__body">
+                        <strong>{session.patientName}</strong>
+                        {session.location ? <span className="muted timeline-item__location">{session.location}</span> : null}
+                      </div>
+                      <StatusBadge status={displayStatus} />
+                    </button>
+
+                    {isExpanded ? (
+                      <div className="timeline-item__actions">
+                        <Link className="secondary-button secondary-button--link" to={`/pacientes/${session.patientId}?tab=Prontuario`}>
+                          Prontuario
+                        </Link>
+                        <button
+                          className="secondary-button"
+                          type="button"
+                          onClick={() => {
+                            setEditingSession(session);
+                            setForm(buildFormFromSession(session));
+                            setShowForm(true);
+                            setFormError("");
+                          }}
+                        >
+                          Remarcar
+                        </button>
+                        <button
+                          className="secondary-button"
+                          type="button"
+                          disabled={busySessionId === session.id}
+                          onClick={() => handleStatusChange(session.id, "cancelled")}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          className="secondary-button"
+                          type="button"
+                          disabled={busySessionId === session.id}
+                          onClick={() => handleStatusChange(session.id, "completed")}
+                        >
+                          Realizado
+                        </button>
+                      </div>
+                    ) : null}
+                  </article>
+                );
+              })}
+            </div>
+
+            <div className="agenda-kpi-row">
+              <div className="agenda-kpi agenda-kpi--blue">
+                <strong>{weekActiveSessions.length}</strong>
+                <span>Sessoes na semana</span>
+              </div>
+              <div className="agenda-kpi agenda-kpi--green">
+                <strong>{weekConfirmed}</strong>
+                <span>Confirmadas</span>
+              </div>
+              <div className="agenda-kpi agenda-kpi--orange">
+                <strong>{weekPendingConfirmation}</strong>
+                <span>A confirmar</span>
               </div>
             </div>
-
-            <div className="button-row">
-              <Link className="secondary-button secondary-button--link" to={`/pacientes/${selectedSession.patientId}?tab=Prontuario`}>
-                Prontuario
-              </Link>
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={() => {
-                  setEditingSession(selectedSession);
-                  setForm(buildFormFromSession(selectedSession));
-                  setShowForm(true);
-                  setFormError("");
-                }}
-              >
-                Remarcar
-              </button>
-              <button
-                className="secondary-button"
-                type="button"
-                disabled={busySessionId === selectedSession.id}
-                onClick={() => handleStatusChange(selectedSession.id, "cancelled")}
-              >
-                Cancelar
-              </button>
-              <button
-                className="secondary-button"
-                type="button"
-                disabled={busySessionId === selectedSession.id}
-                onClick={() => handleStatusChange(selectedSession.id, "completed")}
-              >
-                Realizado
-              </button>
-            </div>
-          </div>
-        ) : null}
-
-        {!loading && !error && view === "week" ? (
-          <div className="calendar-week-grid">
-            {weekDays.map((day) => {
-              const dayKey = toLocalDateKey(day);
-              const daySessions = sessionsByDay[dayKey] ?? [];
-              const today = sameDay(day, new Date());
-
-              return (
-                <article key={dayKey} className={`calendar-day-card ${today ? "calendar-day-card--today" : ""}`}>
-                  <div className="calendar-day-card__header">
-                    <div>
-                      <h4>{formatWeekdayLabel(day)}</h4>
-                      <p className="muted">{daySessions.length} sessao(oes)</p>
-                    </div>
-                    {today ? <span className="pill pill--success">Hoje</span> : null}
-                  </div>
-
-                  <div className="stack-list">
-                    {daySessions.length === 0 ? <p className="muted small">Nenhuma sessao neste dia.</p> : null}
-                    {daySessions.map((session) => renderSessionBox(session))}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+          </>
         ) : null}
 
         {!loading && !error && view === "month" ? (

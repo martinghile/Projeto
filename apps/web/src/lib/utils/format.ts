@@ -43,6 +43,10 @@ export function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
+export function formatTime(isoValue: string) {
+  return new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(isoValue));
+}
+
 export function formatTimeRange(startsAt: string, endsAt: string) {
   const formatter = new Intl.DateTimeFormat("pt-BR", {
     hour: "2-digit",
