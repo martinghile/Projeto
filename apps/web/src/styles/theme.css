@@ -694,6 +694,12 @@ textarea {
   flex-wrap: wrap;
 }
 
+.agenda-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 .agenda-view-tabs,
 .agenda-navigation {
   display: flex;
@@ -709,6 +715,266 @@ textarea {
 
 .agenda-navigation {
   gap: 0.35rem;
+}
+
+.day-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.day-picker__nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--panel-strong);
+  color: var(--text);
+  font-size: 1.1rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.day-picker__nav:hover {
+  background: var(--surface-soft);
+}
+
+.day-picker__nav:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.day-picker__days {
+  display: flex;
+  flex: 1;
+  gap: 0.25rem;
+}
+
+.day-picker__day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  flex: 1;
+  padding: 0.55rem 0.25rem 0.45rem;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text);
+  transition: 120ms ease;
+}
+
+.day-picker__day:hover {
+  background: var(--surface-soft);
+}
+
+.day-picker__weekday {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.day-picker__number {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.day-picker__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--brand-blue);
+}
+
+.day-picker__day--selected {
+  background: var(--brand-blue);
+  color: #ffffff;
+  border-color: var(--brand-blue);
+}
+
+.day-picker__day--selected .day-picker__weekday {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.day-picker__day--selected .day-picker__dot {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.day-picker__day--today:not(.day-picker__day--selected) {
+  border-color: var(--primary-soft-strong);
+}
+
+.agenda-today-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--brand-blue);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.agenda-today-link:hover {
+  text-decoration: underline;
+}
+
+.day-timeline {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.day-timeline__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.day-timeline__empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  border-radius: 12px;
+  border: 1px dashed var(--border);
+}
+
+.timeline-item {
+  border-radius: 12px;
+  border: 1px solid var(--outline-soft);
+  background: var(--panel-strong);
+  transition: 120ms ease;
+}
+
+.timeline-item__row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.timeline-item__time {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  min-width: 52px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.timeline-item__time .muted {
+  font-weight: 400;
+  font-size: 0.78rem;
+}
+
+.timeline-item__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.timeline-item__body strong {
+  display: block;
+  margin: 0;
+}
+
+.timeline-item__location {
+  font-size: 0.82rem;
+}
+
+.timeline-item__actions {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0 1rem 0.85rem;
+  flex-wrap: wrap;
+}
+
+.timeline-item--expanded {
+  box-shadow: 0 0 0 2px var(--primary-soft-strong);
+}
+
+.timeline-item--confirmed {
+  border-left: 3px solid rgba(47, 125, 75, 0.6);
+}
+
+.timeline-item--awaiting-confirmation {
+  border-left: 3px solid rgba(185, 108, 17, 0.6);
+}
+
+.timeline-item--completed {
+  border-left: 3px solid var(--primary-soft-strong);
+}
+
+.timeline-item--cancelled {
+  border-left: 3px solid rgba(181, 72, 63, 0.5);
+  opacity: 0.6;
+}
+
+.timeline-item--missed {
+  border-left: 3px solid rgba(185, 108, 17, 0.5);
+  opacity: 0.7;
+}
+
+.agenda-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.agenda-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--outline-soft);
+}
+
+.agenda-kpi strong {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.agenda-kpi span {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.agenda-kpi--blue {
+  background: linear-gradient(135deg, rgba(var(--brand-blue-rgb), 0.1), rgba(var(--brand-blue-rgb), 0.04));
+}
+
+.agenda-kpi--blue strong {
+  color: var(--brand-blue);
+}
+
+.agenda-kpi--green {
+  background: linear-gradient(135deg, rgba(47, 125, 75, 0.1), rgba(47, 125, 75, 0.04));
+}
+
+.agenda-kpi--green strong {
+  color: #2f7d4b;
+}
+
+.agenda-kpi--orange {
+  background: linear-gradient(135deg, rgba(185, 108, 17, 0.1), rgba(185, 108, 17, 0.04));
+}
+
+.agenda-kpi--orange strong {
+  color: #b96c11;
 }
 
 .agenda-navigation__button {
@@ -1858,6 +2124,72 @@ textarea {
   .report-line-chart__labels {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .agenda-header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .agenda-header-actions .agenda-view-tab {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .agenda-header-actions .primary-button {
+    flex: 1 1 100%;
+  }
+
+  .day-picker__nav {
+    width: 32px;
+    height: 32px;
+  }
+
+  .day-picker__day {
+    padding: 0.4rem 0.15rem 0.35rem;
+  }
+
+  .day-picker__weekday {
+    font-size: 0.65rem;
+  }
+
+  .day-picker__number {
+    font-size: 1rem;
+  }
+
+  .timeline-item__row {
+    gap: 0.65rem;
+    padding: 0.7rem 0.75rem;
+  }
+
+  .timeline-item__time {
+    min-width: 44px;
+    font-size: 0.8rem;
+  }
+
+  .timeline-item__body strong {
+    font-size: 0.92rem;
+  }
+
+  .timeline-item__actions {
+    padding: 0 0.75rem 0.7rem;
+  }
+
+  .agenda-kpi-row {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+
+  .agenda-kpi {
+    padding: 0.7rem;
+  }
+
+  .agenda-kpi strong {
+    font-size: 1.2rem;
+  }
+
+  .agenda-kpi span {
+    font-size: 0.72rem;
+  }
 }
 
 @media (max-width: 420px) {
@@ -1875,5 +2207,17 @@ textarea {
 
   .brand-logo--large {
     max-width: 260px;
+  }
+
+  .day-picker__weekday {
+    font-size: 0.6rem;
+  }
+
+  .day-picker__number {
+    font-size: 0.9rem;
+  }
+
+  .agenda-kpi strong {
+    font-size: 1rem;
   }
 }
