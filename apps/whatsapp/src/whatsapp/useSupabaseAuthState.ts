@@ -35,6 +35,10 @@ async function removeData(tenantId: string, key: string) {
   await supabaseAdmin.from(TABLE).delete().eq("tenant_id", tenantId).eq("key", key);
 }
 
+export async function clearSupabaseAuthState(tenantId: string) {
+  await supabaseAdmin.from(TABLE).delete().eq("tenant_id", tenantId);
+}
+
 export async function useSupabaseAuthState(tenantId: string) {
   const creds: AuthenticationCreds = (await readData(tenantId, "creds")) ?? initAuthCreds();
 

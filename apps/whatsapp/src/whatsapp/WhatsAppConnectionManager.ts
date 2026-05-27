@@ -24,7 +24,7 @@ import {
   upsertConnectionSnapshot,
 } from "../lib/repository.js";
 import type { WhatsAppConnectionSnapshot, WhatsAppConnectionStatus } from "../lib/types.js";
-import { useSupabaseAuthState } from "./useSupabaseAuthState.js";
+import { useSupabaseAuthState, clearSupabaseAuthState } from "./useSupabaseAuthState.js";
 
 const logger = pino({ level: "silent" });
 
@@ -243,6 +243,10 @@ export class WhatsAppConnectionManager {
             state.lastError = error instanceof Error ? error.message : "Falha ao reconectar.";
           });
         } else {
+          // Limpa credenciais do banco para que a proxima conexao gere um novo QR code
+          await clearSupabaseAuthState(state.tenantId).catch((error) => {
+            console.error(`[whatsapp] falha ao limpar credenciais do tenant ${state.tenantId}:`, error);
+          });
           state.status = "disconnected";
           state.qrCodeDataUrl = null;
           state.lastError = "Sessao encerrada pelo usuario.";
