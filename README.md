@@ -156,13 +156,45 @@ select cron.schedule('keep-whatsapp-alive', '*/10 * * * *',
 
 ---
 
-## Pendencias conhecidas
+## 2026-05-14 — Auditoria Financeira, Logo por Tema e Layout Mobile
 
-- [ ] Proxy serverless Vercel (`api/whatsapp-proxy/`) nao funciona — rewrite catch-all do `vercel.json` intercepta rotas `/api/*`. Nao bloqueante: frontend conecta direto no Render via CORS
-- [ ] Ativar criptografia: configurar `VITE_ENCRYPTION_KEY` no Vercel (32+ caracteres)
-- [ ] Testar fluxo completo WhatsApp em producao: conectar QR, enviar lembrete, receber resposta
-- [ ] Considerar rate limiting nas RPCs publicas da anamnese
+- **Financeiro**: corrigido sincronismo de pagamentos (series_id null, status overdue, lógica de quitação)
+- **Logo**: logo troca automaticamente entre claro/escuro via `data-theme` no `<html>`
+- **Mobile**: layout responsivo corrigido em AgendaPage, FinancePage e PatientsPage
 
 ---
 
-*Ultima atualizacao: 2026-05-12*
+## 2026-05-27 — Redesenho da Agenda
+
+Interface da agenda substituída por day picker + timeline diária:
+
+- **Day picker horizontal**: 7 dias com navegação por semana, dot indicador de sessões
+- **Timeline diária**: itens expansíveis com ações inline (confirmar, cancelar, marcar como realizado)
+- **KPI cards**: totais da semana (sessões ativas, confirmadas, aguardando confirmação)
+- **Arquivo**: `apps/web/src/features/agenda/AgendaPage.tsx` (reescrito), `apps/web/src/styles/theme.css`
+
+---
+
+## 2026-05-27 — Fix WhatsApp: QR Code não aparecia após logout
+
+- **Problema**: ao fazer logout da sessão (WhatsApp encerrado pelo usuário), as credenciais inválidas ficavam salvas na tabela `whatsapp_auth_keys`. Na próxima tentativa de conectar, o Baileys recarregava essas credenciais, recebia imediatamente outro `loggedOut`, e o QR code nunca era gerado.
+- **Correção**: `clearSupabaseAuthState()` chamada no handler de `DisconnectReason.loggedOut` — limpa todas as chaves do tenant antes de marcar como desconectado.
+- **Arquivos**: `apps/whatsapp/src/whatsapp/useSupabaseAuthState.ts`, `WhatsAppConnectionManager.ts`
+
+## 2026-05-27 — Configuração de Produção do WhatsApp corrigida
+
+- `WHATSAPP_SERVICE_BASE_URL` adicionado ao ambiente Production no Vercel (antes só estava em Preview)
+- Frontend em produção agora roteia corretamente pelo proxy `/api/whatsapp-proxy` → Render
+
+---
+
+## Pendencias conhecidas
+
+- [ ] Ativar criptografia: configurar `VITE_ENCRYPTION_KEY` no Vercel (32+ caracteres)
+- [ ] Testar fluxo completo WhatsApp em producao: conectar QR, enviar lembrete, receber resposta
+- [ ] Considerar rate limiting nas RPCs publicas da anamnese
+- [ ] VM GCP `clingestor-whatsapp` (34.69.45.21) pode ser desativada — servico migrado para Render
+
+---
+
+*Ultima atualizacao: 2026-05-27*
